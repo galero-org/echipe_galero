@@ -1,22 +1,41 @@
+---
+import Navbar from "../components/Navbar";
+---
+
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
-	</head>
-	<body>
-		<slot />
-	</body>
-</html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/galero.svg" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Galero Cup</title>
+  </head>
+  <body>
+    <Navbar client:load />
+    <slot />
+  </body>
 
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>
+  <style>
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+
+  <footer class="text-center mt-12 md:mt-16 py-6 border-t border-slate-700">
+    <p class="text-sm text-gray-400">
+      &copy; {new Date().getFullYear()} Galero Football Iași. Toate drepturile rezervate.
+    </p>
+    <p class="text-xs text-gray-500 mt-1">
+      Construit cu{" "}
+      <a href="https://astro.build/" target="_blank" class="hover:text-sky-300">
+        Astro
+      </a>{" "}
+      și pasiune pentru fotbal.
+    </p>
+  </footer>
+</html>

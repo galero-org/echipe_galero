@@ -1,0 +1,44 @@
+---
+import Layout from "../layouts/Layout.astro";
+export const prerender = false;
+
+const accessToken = Astro.cookies.get("sb-access-token");
+const refreshToken = Astro.cookies.get("sb-refresh-token");
+
+if (!accessToken?.value || !refreshToken?.value) {
+  return Astro.redirect("/signin");
+}
+
+const { data, error } = await import("../lib/supabase").then(({ supabase }) =>
+  supabase.auth.setSession({
+    access_token: accessToken.value,
+    refresh_token: refreshToken.value,
+  })
+);
+
+if (error || !data?.user) {
+  Astro.cookies.delete("sb-access-token", { path: "/" });
+  Astro.cookies.delete("sb-refresh-token", { path: "/" });
+  return Astro.redirect("/signin");
+}
+
+const email = data.user.email;
+---
+
+<Layout title="Dashboard">
+  <div
+    class="min-h-screen flex flex-col justify-center items-center p-4 text-center"
+  >
+    <h1 class="text-3xl font-bold text-primary mb-2">Welcome, {email}</h1>
+    <p class="text-gray-600 mb-6">We're happy to see you here!</p>
+
+    <form action="/api/auth/signout" method="get">
+      <button
+        type="submit"
+        class="px-6 py-2 bg-accent text-primary font-semibold rounded hover:bg-opacity-80 transition"
+      >
+        Sign out
+      </button>
+    </form>
+  </div>
+</Layout>

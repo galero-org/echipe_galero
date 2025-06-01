@@ -1,0 +1,55 @@
+---
+import Layout from "../layouts/Layout.astro";
+export const prerender = false;
+---
+
+<Layout title="Register">
+  <div
+    class="flex items-center justify-center min-h-screen bg-grayLight font-text"
+  >
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md space-y-6">
+      <h1 class="text-3xl font-bold text-center text-primary">Register</h1>
+      <p class="text-center text-sm text-text">
+        Already have an account?
+        <a href="/signin" class="text-accent hover:underline">Sign in</a>
+      </p>
+
+      <form action="/api/auth/register" method="post" class="space-y-4">
+        <div>
+          <label for="email" class="block mb-1 text-sm font-medium text-text"
+            >Email</label
+          >
+          <input
+            type="email"
+            name="email"
+            id="email"
+            placeholder="you@example.com"
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+          />
+        </div>
+
+        <div>
+          <label for="password" class="block mb-1 text-sm font-medium text-text"
+            >Password</label
+          >
+          <input
+            type="password"
+            name="password"
+            id="password"
+            placeholder="Your password"
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="w-full py-2 px-4 bg-primary text-white rounded-lg hover:bg-opacity-90 transition"
+        >
+          Register
+        </button>
+      </form>
+    </div>
+  </div>
+</Layout>

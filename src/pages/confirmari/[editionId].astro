@@ -1,0 +1,29 @@
+---
+import ConfirmariList from "../../components/ConfirmariList.tsx";
+import Layout from "../../layouts/Layout.astro";
+
+// Get the editionId from the URL parameters
+const { editionId } = Astro.params;
+
+// You might want to add validation for editionId here (e.g., check if it's a number)
+// For simplicity, we'll pass it as is to the React component.
+---
+
+<Layout title={`Confirmări Ediția ${editionId || ""}`}>
+  <main class="container mx-auto py-8 px-4">
+    <h1
+      class="text-4xl font-extrabold text-center text-gray-900 mb-10 tracking-tight leading-tight"
+    >
+      Gestionare Confirmări Ediție {editionId}
+    </h1>
+    {
+      /*
+      The ConfirmariList React component is rendered here.
+      client:load ensures that the component is hydrated and interactive on the client-side
+      as soon as the page loads.
+      We pass the editionId from Astro.params to the React component.
+    */
+    }
+    <ConfirmariList client:load initialEditionId={editionId} />
+  </main>
+</Layout>

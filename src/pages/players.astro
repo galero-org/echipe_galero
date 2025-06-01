@@ -1,0 +1,33 @@
+---
+import Layout from "../layouts/Layout.astro";
+import PlayerList from "../components/PlayerList";
+export const prerender = false;
+
+const accessToken = Astro.cookies.get("sb-access-token");
+const refreshToken = Astro.cookies.get("sb-refresh-token");
+
+if (!accessToken?.value || !refreshToken?.value) {
+  return Astro.redirect("/signin");
+}
+
+const { supabase } = await import("../lib/supabase");
+
+const { data: sessionData, error: sessionError } =
+  await supabase.auth.setSession({
+    access_token: accessToken.value,
+    refresh_token: refreshToken.value,
+  });
+
+if (sessionError || !sessionData?.user) {
+  Astro.cookies.delete("sb-access-token", { path: "/" });
+  Astro.cookies.delete("sb-refresh-token", { path: "/" });
+  return Astro.redirect("/signin");
+}
+---
+
+<Layout title="Players">
+  <div class="min-h-screen p-6">
+    <h1 class="text-3xl font-bold mb-4 text-center">Jucători înregistrați</h1>
+    <PlayerList client:load />
+  </div>
+</Layout>

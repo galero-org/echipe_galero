@@ -1,0 +1,26 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+:root {
+  --color-primary: #252525;
+  --color-secondary: #54595f;
+  --color-text: #7a7a7a;
+  --color-accent: #fc5959;
+  --color-black-alt: #000000;
+  --color-gray-light: #eaeaea;
+
+  --font-primary: "Roboto", sans-serif;
+  --font-secondary: "Roboto Slab", serif;
+  --font-text: "Roboto", sans-serif;
+  --font-accent: "Roboto", sans-serif;
+  --font-khand: "Khand", sans-serif;
+
+  --font-weight-primary: 600;
+  --font-weight-secondary: 400;
+  --font-weight-text: 400;
+  --font-weight-accent: 500;
+
+  --font-size-khand: 65px;
+  --text-transform-khand: uppercase;
+}

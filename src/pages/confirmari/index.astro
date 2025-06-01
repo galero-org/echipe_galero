@@ -1,0 +1,21 @@
+---
+import ConfirmariList from "../../components/ConfirmariList.tsx";
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout title="Gestionare Confirmări">
+  <main class="container mx-auto py-8 px-4">
+    <h1
+      class="text-4xl font-extrabold text-center text-gray-900 mb-10 tracking-tight leading-tight"
+    >
+      Gestionare Confirmări Ediție
+    </h1>
+    {
+      /*
+      Render ConfirmariList without an initialEditionId,
+      so it will start in the "select an edition" state.
+    */
+    }
+    <ConfirmariList client:load />
+  </main>
+</Layout>
