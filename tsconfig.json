@@ -1,8 +1,10 @@
 {
   "extends": "astro/tsconfigs/strict",
   "include": [
-    ".astro/types.d.ts",
-    "**/*"
+    "src/**/*.ts",
+    "src/**/*.d.ts", // Important pentru src/globals.d.ts
+    "src/**/*.astro"
+    // Poți adăuga și "env.d.ts" dacă îl folosești direct
   ],
   "exclude": [
     "dist"

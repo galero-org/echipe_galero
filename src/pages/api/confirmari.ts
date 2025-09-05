@@ -33,8 +33,6 @@ export const GET: APIRoute = async ({ request }) => {
   const edition_id = parseInt(edition_id_str);
   const { data, error } = await getConfirmari(edition_id);
 
-  console.log(data);
-
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

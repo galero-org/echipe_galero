@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import type { Player, Team } from "../lib/types"; // Asigură-te că ai aceste tipuri definite
+import type { Player, Team } from "../lib/types";
 import PlayerSelectionAndConfig from "./PlayerSelectionAndConfig";
 import GeneratedTeamsDisplay from "./GenerateTeamsDisplay";
-import { generateTeams } from "../lib/teamService"; // Presupunem că această funcție există și funcționează
+import { generateTeams } from "../lib/teamService";
 
 interface Props {
   allPlayers: Player[];
@@ -21,7 +21,6 @@ const TeamOrchestrator: React.FC<Props> = ({
   const [generatedTeams, setGeneratedTeams] = useState<Team[]>([]);
   const [showTeams, setShowTeams] = useState<boolean>(false);
 
-  // Opțional: resetează echipele generate dacă se schimbă jucătorii sau configurația
   useEffect(() => {
     const registered = allPlayers.filter((p) =>
       registeredPlayerIds.includes(p.id)

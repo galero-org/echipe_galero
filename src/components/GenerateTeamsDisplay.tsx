@@ -130,7 +130,6 @@ const GeneratedTeamsDisplay: React.FC<Props> = ({
                     {team.players.length} jucători
                   </span>
                 </div>
-
                 <p className="mb-1 text-sm">
                   Media echipei:{" "}
                   <span
@@ -141,24 +140,43 @@ const GeneratedTeamsDisplay: React.FC<Props> = ({
                     {team.averageGrade?.toFixed(2)}
                   </span>
                 </p>
-
                 <p className="mb-4 text-sm">
                   Șanse de câștig:{" "}
                   <span className="font-semibold text-green-700">
                     {getWinChance(team.averageGrade || 0)}%
                   </span>
                 </p>
-
-                <h4 className="text-sm font-medium mb-2">Jucători:</h4>
+                <h4 className="text-sm font-medium mb-2">Jucători:</h4>         
+                     {" "}
                 <ul className="space-y-1.5">
+                                   {" "}
                   {team.players.map((player) => (
                     <li
                       key={player.id}
                       className="text-sm p-2 bg-white/60 rounded-md shadow-sm"
                     >
-                      {player.full_name}
+                                            {player.full_name}{" "}
+                      {/* AICI ESTE LOCUL UNDE ADĂUGĂM NUMĂRUL DE PREZENȚE */}
+                      {player.totalEditions !== undefined &&
+                        (player.totalEditions === 1 ? (
+                          <span className="text-xs text-red-400 ml-1 font-semibold">
+                            (Nou)
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-500 ml-1">
+                            ({player.totalEditions} prezențe)
+                          </span>
+                        ))}
+                                           {" "}
+                      {player.position === "GK" && (
+                        <span role="img" aria-label="portar">
+                                                    🧤                        {" "}
+                        </span>
+                      )}
+                                         {" "}
                     </li>
                   ))}
+                                 {" "}
                 </ul>
               </motion.div>
             ))}

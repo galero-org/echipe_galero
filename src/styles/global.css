@@ -1,26 +1,67 @@
+/* src/styles/global.css */
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
 :root {
-  --color-primary: #252525;
-  --color-secondary: #54595f;
-  --color-text: #7a7a7a;
-  --color-accent: #fc5959;
-  --color-black-alt: #000000;
-  --color-gray-light: #eaeaea;
+  /* Paleta de culori */
+  --color-primary: #252525; /* Negru/Gri închis pentru text principal, fundaluri butoane primare */
+  --color-primary-hover: #404040; /* O variantă mai deschisă pentru hover pe primar */
 
-  --font-primary: "Roboto", sans-serif;
-  --font-secondary: "Roboto Slab", serif;
-  --font-text: "Roboto", sans-serif;
-  --font-accent: "Roboto", sans-serif;
-  --font-khand: "Khand", sans-serif;
+  --color-secondary: #54595f; /* Gri mediu pentru text secundar, accente */
+  --color-secondary-hover: #6a7076; /* Hover pentru secundar */
 
-  --font-weight-primary: 600;
-  --font-weight-secondary: 400;
-  --font-weight-text: 400;
-  --font-weight-accent: 500;
+  --color-accent: #fc5959; /* Roșu/Portocaliu pentru accente, butoane de acțiune speciale */
+  --color-accent-hover: #fa3b3b; /* Hover pentru accent */
 
-  --font-size-khand: 65px;
-  --text-transform-khand: uppercase;
+  --color-text: #7a7a7a; /* Gri pentru text general de paragraf */
+  --color-text-on-primary: #ffffff; /* Text alb pentru fundaluri primare închise */
+  --color-text-on-accent: #ffffff; /* Text alb pentru fundaluri accent închise */
+
+  --color-background: #ffffff; /* Fundal principal al site-ului (ex: alb) */
+  --color-surface: #f7fafc; /* Fundal pentru carduri, secțiuni (ex: gri foarte deschis) */
+  --color-border: #e2e8f0; /* Culoare pentru borduri subtile */
+
+  --color-success: #48bb78; /* Verde pentru mesaje de succes */
+  --color-error: #f56565; /* Roșu pentru mesaje de eroare */
+  --color-warning: #ecc94b; /* Galben pentru avertismente */
+  --color-info: #4299e1; /* Albastru pentru informații */
+
+  /* Definiții fonturi */
+  --font-sans: "Roboto", sans-serif; /* Font principal pentru textul curent */
+  --font-serif: "Roboto Slab", serif; /* Font serif, dacă este necesar */
+  --font-display: "Khand", sans-serif; /* Font pentru titluri mari, brand */
+
+  /* Greutăți fonturi (opțional, pot fi controlate și de Tailwind) */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Raduis pentru colțuri (opțional) */
+  --border-radius-sm: 0.25rem; /* 4px */
+  --border-radius-md: 0.5rem; /* 8px */
+  --border-radius-lg: 0.75rem; /* 12px */
+}
+
+/* Aplică un font și o culoare de fundal de bază pentru întregul site */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-text); /* Culoarea default pentru text */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Stiluri de bază pentru titluri (opțional, pot fi suprascrise local) */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  color: var(--color-primary); /* Sau o altă culoare specifică pentru titluri */
+  margin-bottom: 0.5em; /* Un spațiu default sub titluri */
 }

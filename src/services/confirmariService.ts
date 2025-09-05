@@ -1,4 +1,3 @@
-// src/services/confirmariService.ts
 import { supabase } from "../lib/supabase";
 import type { Registration } from "../lib/types";
 
@@ -14,6 +13,46 @@ export async function getEditionIdByNumarEditie(numar_editie: number) {
   }
 
   return data.id;
+}
+
+export async function getPlayersRegistrations(playerName: string) {
+  const { data, error } = await supabase
+    .from("registrations")
+    .select(
+      `
+      edition_id,
+      players!inner(full_name)
+    `
+    )
+    .eq("players.full_name", playerName)
+    .eq("status", "inscris");
+
+  if (error) {
+    console.error("Eroare la preluarea înregistrărilor jucătorului:", error);
+    return { totalEditions: 0, error };
+  }
+
+  if (!data || data.length === 0) {
+    return { totalEditions: 0, error: null };
+  }
+
+  const distinctEditionIds = [...new Set(data.map((reg) => reg.edition_id))];
+
+  return {
+    totalEditions: distinctEditionIds.length,
+    error: null,
+  };
+}
+
+export async function getPrezenteSiRetrageriPeJucator() {
+  const { data, error } = await supabase.rpc("get_player_stats");
+
+  if (error) {
+    console.error("Eroare la obținerea statisticilor:", error);
+    return { data: null, error };
+  }
+
+  return { data, error: null };
 }
 
 export async function getConfirmari(numarEditie: number) {
@@ -39,7 +78,6 @@ export async function getConfirmari(numarEditie: number) {
   return { data, error: null };
 }
 
-// ✅ INSERT - Adaugă o nouă confirmare
 export async function insertConfirmare(registration: {
   status: string;
   registered_at: string;
@@ -81,4 +119,19 @@ export async function deleteConfirmare(id: string) {
     .eq("id", id);
 
   return { data, error };
+}
+
+// NOUA FUNCȚIE: Actualizează doar câmpul 'payment' al unei înregistrări
+export async function updateRegistrationPayment(
+  id: string,
+  paymentValue: number
+) {
+  const { data, error } = await updateConfirmare(id, { payment: paymentValue });
+
+  if (error) {
+    console.error("Eroare la actualizarea plății pentru înregistrare:", error);
+    return { data: null, error };
+  }
+
+  return { data, error: null };
 }

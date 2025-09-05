@@ -1,0 +1,23 @@
+---
+import LaunchGate from "../components/LaunchGate";
+import Layout from "../layouts/Layout.astro";
+import TopGolgheteri from "../components/TopGolgheteri";
+
+const targetDate = new Date(Date.UTC(2025, 6, 13, 14, 0, 0));
+---
+
+<Layout>
+  {
+    /*
+    Folosește componenta LaunchGate și transmite-i data țintă.
+    Directiva client:load este esențială aici, deoarece LaunchGate are
+    logica de cronometru care rulează în browser.
+    
+    TopGolgheteriTable va fi încărcată automat odată ce LaunchGate este gata.
+  */
+  }
+  <LaunchGate targetDate={targetDate} client:load>
+    {/* Copilul componentei LaunchGate va fi afișat doar la data specificată */}
+    <TopGolgheteri client:load />
+  </LaunchGate>
+</Layout>

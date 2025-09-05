@@ -1,63 +1,26 @@
-import { supabase } from "../../lib/supabase";
 import type { APIRoute } from "astro";
+import { requireAuthAndRole } from "../../lib/authHelpers";
+// Importă funcția ajutătoare - ajustează calea dacă este necesar
 
-export const GET: APIRoute = async ({ cookies }) => {
-  const accessToken = cookies.get("sb-access-token")?.value;
-  const refreshToken = cookies.get("sb-refresh-token")?.value;
+export const GET: APIRoute = async (context) => {
+  // 'context' este APIContext
+  // Apelează requireAuthAndRole. Deoarece nu specificăm roluri,
+  // va verifica doar dacă utilizatorul este autentificat și are un profil.
+  const { user: userProfile, errorResponse } = requireAuthAndRole(context);
 
-  if (!accessToken || !refreshToken) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-    });
+  // Dacă errorResponse există, înseamnă că utilizatorul nu este autentificat
+  // sau profilul nu a putut fi încărcat (funcția returnează 401 în acest caz).
+  if (errorResponse) {
+    return errorResponse; // Returnează răspunsul de eroare (401 JSON)
   }
 
-  // Resetează sesiunea cu cele două token-uri
-  const { data: sessionData, error: sessionError } =
-    await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    });
-
-  if (sessionError) {
-    return new Response(JSON.stringify({ error: "Session error" }), {
-      status: 401,
-    });
-  }
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    return new Response(JSON.stringify({ error: "User not found" }), {
-      status: 404,
-    });
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user!.id)
-    .single();
-
-  console.log("Profile from DB:", profile, "Error:", profileError);
-
-  if (error || !user) {
-    return new Response(JSON.stringify({ error: "User not found" }), {
-      status: 404,
-    });
-  }
-
-  const { full_name, avatar_url } = user.user_metadata;
-
-  const userProfile = {
-    id: user.id,
-    username: full_name || user.email,
-    avatar_url: avatar_url || null,
-    role: profile!.role,
-    created_at: user.created_at,
-  };
-
-  return new Response(JSON.stringify(userProfile));
+  // Dacă nu există errorResponse, atunci userProfile este garantat a fi obiectul UserProfile.
+  // Nu mai este nevoie de verificarea 'if (context.locals.profile)' aici,
+  // deoarece requireAuthAndRole a făcut deja această validare.
+  return new Response(JSON.stringify(userProfile), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
 };

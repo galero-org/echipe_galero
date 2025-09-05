@@ -1,0 +1,14 @@
+---
+// src/pages/admin/users.astro
+import Layout from "../../layouts/Layout.astro";
+import UserListClient from "../../components/admin/UserList.tsx";
+---
+
+<Layout title="Admin - Management Utilizatori">
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-display font-bold mb-6 text-primary">
+      Management Utilizatori
+    </h1>
+    <UserListClient client:load />
+  </div>
+</Layout>

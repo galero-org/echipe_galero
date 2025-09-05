@@ -2,9 +2,12 @@
 import Layout from "../layouts/Layout.astro";
 import { supabase } from "../lib/supabase";
 import TeamOrchestrator from "../components/TeamOrchestrator";
+import { getPlayersRegistrations } from "../services/confirmariService";
+// Importă funcția pentru a obține prezențele jucătorilor
 
 export const prerender = false;
 
+// --- Verificare Autentificare ---
 const accessToken = Astro.cookies.get("sb-access-token");
 const refreshToken = Astro.cookies.get("sb-refresh-token");
 
@@ -24,22 +27,23 @@ if (sessionError || !sessionData?.user) {
   return Astro.redirect("/signin");
 }
 
+// --- Preluare Jucători ---
 const { data: allPlayers, error } = await supabase.from("players").select("*");
 if (error) {
   console.error("Error fetching players:", error.message);
-  // Poate afișa un mesaj de eroare utilizatorului sau redirecționa
-  return Astro.redirect("/error-page"); // Exemplu
+  return Astro.redirect("/error-page");
 }
 
+// --- Preluare Ediții ---
 const { data: editions, error: editionsError } = await supabase
   .from("editions")
   .select("id, numar_editie")
   .order("numar_editie", { ascending: false });
 
 const lastEdition = editions && editions.length > 0 ? editions[0] : null;
-// Modificare aici: preia numar_editie de la lastEdition
 const numarEditie: number = lastEdition?.numar_editie ?? 0;
 
+// --- Preluare Înregistrări pentru Ultima Ediție ---
 const { data: registrations, error: regError } = await supabase
   .from("registrations")
   .select("player_id")
@@ -52,6 +56,28 @@ if (regError) {
 }
 
 const registeredPlayerIds = registrations.map((r) => r.player_id);
+
+// --- Adăugare Număr de Prezențe pentru Fiecare Jucător ---
+// Creăm o listă de promisiuni pentru fiecare apel getPlayersRegistrations
+const playersWithPresencePromises = allPlayers.map(async (player) => {
+  const { totalEditions, error: presenceError } = await getPlayersRegistrations(
+    player.full_name
+  );
+  if (presenceError) {
+    console.error(
+      `Eroare la preluarea prezențelor pentru ${player.full_name}:`,
+      presenceError
+    );
+    // În caz de eroare, setăm prezența la 0 sau o valoare implicită
+    return { ...player, totalEditions: 0 };
+  }
+  return { ...player, totalEditions: totalEditions };
+});
+
+// Așteptăm ca toate promisiunile să se rezolve
+const allPlayersWithPresence = await Promise.all(playersWithPresencePromises);
+
+// Aici vom folosi allPlayersWithPresence în loc de allPlayers original
 ---
 
 <Layout title="Generare Echipe Echilibrate">
@@ -60,10 +86,10 @@ const registeredPlayerIds = registrations.map((r) => r.player_id);
       ⚽ Generează Echipe de Fotbal ⚽
     </h1>
     {
-      allPlayers && allPlayers.length > 0 ? (
+      allPlayersWithPresence && allPlayersWithPresence.length > 0 ? (
         <TeamOrchestrator
           client:load
-          allPlayers={allPlayers}
+          allPlayers={allPlayersWithPresence}
           registeredPlayerIds={registeredPlayerIds}
           edition_id={numarEditie}
         />

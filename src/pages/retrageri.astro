@@ -1,0 +1,15 @@
+---
+import PlayersStatsTable from "../components/confirmari/PlayersStatsTable";
+import Layout from "../layouts/Layout.astro";
+import { getPrezenteSiRetrageriPeJucator } from "../services/confirmariService";
+
+const { data: stats } = await getPrezenteSiRetrageriPeJucator();
+---
+
+<Layout title="Register">
+  <div
+    class="flex items-center justify-center min-h-screen bg-grayLight font-text"
+  >
+    <PlayersStatsTable client:load players={stats} />
+  </div>
+</Layout>

@@ -1,0 +1,16 @@
+---
+import EditionPage from "../../components/editii/EditionPage";
+
+const { id } = Astro.params;
+
+// toate edițiile
+const res = await fetch(
+  "https://script.google.com/macros/s/AKfycbwB-PlNzvHwSzCyDZP0oXdP1QlU0Vw6vYjntUZ-rAwpzH9LwdECialOk9jDXCSrQH7O/exec"
+);
+const editions = await res.json();
+
+// selectăm ediția pe baza indexului din URL
+const editie = editions[id];
+---
+
+<EditionPage editie={editie} />
