@@ -1,16 +1,39 @@
 ---
-import EditionPage from "../../components/editii/EditionPage";
+// Importăm componenta de layout și cea de conținut
+import Layout from "../../layouts/Layout.astro";
+import EditionPageContent from "../../components/editii/EditionPage.tsx";
+export const prerender = false;
+const DATA_API_URL =
+  "https://script.google.com/macros/s/AKfycby9KMMcqg5taDUxJlVFHGVifSlyqfPJtH1fFKL6SMn8WoA4-6I5mwvLnxfJlOKEcFkO/exec";
 
-const { id } = Astro.params;
+// 1. Preluăm parametrul 'id' din URL (ex: /editii/1 -> id = "1")
+const { editionId } = Astro.params;
 
-// toate edițiile
-const res = await fetch(
-  "https://script.google.com/macros/s/AKfycbwB-PlNzvHwSzCyDZP0oXdP1QlU0Vw6vYjntUZ-rAwpzH9LwdECialOk9jDXCSrQH7O/exec"
-);
-const editions = await res.json();
+// 2. Apelăm API-ul de date, solicitând EDIȚIA specifică prin ID.
+const res = await fetch(`${DATA_API_URL}?editia=${editionId}`);
 
-// selectăm ediția pe baza indexului din URL
-const editie = editions[id];
+// API-ul nostru returnează un array de o singură ediție: [{...editie...}]
+const data = await res.json();
+const editie = data[0]; // Extragem obiectul ediției din array
+
+// Dacă ediția nu a fost găsită (editie e undefined), afișăm o eroare
+// pentru a nu bloca aplicația, dar lăsăm componenta să gestioneze asta.
+
+// Funcția getStaticPaths este necesară pentru a pregenera paginile [id].astro
+export async function getStaticPaths() {
+  // Aici trebuie să apelați scriptul de listare (cel rapid) pentru a obține toate ID-urile valide.
+  // Presupunând că scriptul de listare este deja configurat:
+  const listRes = await fetch(
+    "https://script.google.com/macros/s/AKfycbzRrCwb7y1aW1x88DedUlU4GwXUn84Ahl8mumn0bL-DbAPx0rQACoz7a62RPIsCxla4/exec"
+  );
+  const editionsList = await listRes.json();
+
+  return editionsList.map((ed) => ({
+    params: { editionId: String(ed.id) }, // Returnează lista de ID-uri ca string-uri
+  }));
+}
 ---
 
-<EditionPage editie={editie} />
+<Layout title={editie ? `Ediția ${editie.nume}` : "Ediție Negăsită"}>
+  <EditionPageContent client:load editie={editie} editionId={editionId} />
+</Layout>

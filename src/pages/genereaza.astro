@@ -42,12 +42,13 @@ const { data: editions, error: editionsError } = await supabase
 
 const lastEdition = editions && editions.length > 0 ? editions[0] : null;
 const numarEditie: number = lastEdition?.numar_editie ?? 0;
+const editionId: string = lastEdition?.id ?? "";
 
 // --- Preluare Înregistrări pentru Ultima Ediție ---
 const { data: registrations, error: regError } = await supabase
   .from("registrations")
   .select("player_id")
-  .eq("edition_id", lastEdition?.id ?? "")
+  .eq("edition_id", editionId)
   .eq("status", "inscris");
 
 if (regError) {
@@ -61,12 +62,12 @@ const registeredPlayerIds = registrations.map((r) => r.player_id);
 // Creăm o listă de promisiuni pentru fiecare apel getPlayersRegistrations
 const playersWithPresencePromises = allPlayers.map(async (player) => {
   const { totalEditions, error: presenceError } = await getPlayersRegistrations(
-    player.full_name
+    player.full_name,
   );
   if (presenceError) {
     console.error(
       `Eroare la preluarea prezențelor pentru ${player.full_name}:`,
-      presenceError
+      presenceError,
     );
     // În caz de eroare, setăm prezența la 0 sau o valoare implicită
     return { ...player, totalEditions: 0 };
@@ -91,7 +92,8 @@ const allPlayersWithPresence = await Promise.all(playersWithPresencePromises);
           client:load
           allPlayers={allPlayersWithPresence}
           registeredPlayerIds={registeredPlayerIds}
-          edition_id={numarEditie}
+          edition_id={editionId}
+          numarEditie={numarEditie}
         />
       ) : (
         <p class="text-center text-red-500">

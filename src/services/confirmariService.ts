@@ -22,7 +22,7 @@ export async function getPlayersRegistrations(playerName: string) {
       `
       edition_id,
       players!inner(full_name)
-    `
+    `,
     )
     .eq("players.full_name", playerName)
     .eq("status", "inscris");
@@ -66,7 +66,7 @@ export async function getConfirmari(numarEditie: number) {
       players(id, full_name),
       edition_id,
       editions!inner(numar_editie)
-    `
+    `,
     )
     .eq("editions.numar_editie", numarEditie)
     .order("registered_at", { ascending: true });
@@ -86,22 +86,44 @@ export async function insertConfirmare(registration: {
 }) {
   const edition_id = await getEditionIdByNumarEditie(registration.numar_editie);
 
-  const { data, error } = await supabase.from("registrations").insert([
-    {
-      status: registration.status,
-      registered_at: registration.registered_at,
-      player_id: registration.player_id,
-      edition_id: edition_id,
-    },
-  ]);
+  const { data: insertedData, error: insertError } = await supabase
+    .from("registrations")
+    .insert([
+      {
+        status: registration.status,
+        registered_at: registration.registered_at,
+        player_id: registration.player_id,
+        edition_id: edition_id,
+      },
+    ])
+    .select();
 
-  return { data, error };
+  if (insertError || !insertedData || insertedData.length === 0) {
+    return { data: null, error: insertError };
+  }
+
+  // Fetch the complete registration with player data
+  const { data: completeData, error: selectError } = await supabase
+    .from("registrations")
+    .select(
+      `
+      id,
+      status,
+      registered_at,
+      players(id, full_name),
+      edition_id
+    `,
+    )
+    .eq("id", insertedData[0].id)
+    .single();
+
+  return { data: completeData, error: selectError };
 }
 
 // ✅ UPDATE - Actualizează o confirmare existentă
 export async function updateConfirmare(
   id: string,
-  updates: Partial<Registration>
+  updates: Partial<Registration>,
 ) {
   const { data, error } = await supabase
     .from("registrations")
@@ -119,19 +141,4 @@ export async function deleteConfirmare(id: string) {
     .eq("id", id);
 
   return { data, error };
-}
-
-// NOUA FUNCȚIE: Actualizează doar câmpul 'payment' al unei înregistrări
-export async function updateRegistrationPayment(
-  id: string,
-  paymentValue: number
-) {
-  const { data, error } = await updateConfirmare(id, { payment: paymentValue });
-
-  if (error) {
-    console.error("Eroare la actualizarea plății pentru înregistrare:", error);
-    return { data: null, error };
-  }
-
-  return { data, error: null };
 }

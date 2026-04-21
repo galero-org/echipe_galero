@@ -1,0 +1,90 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+// Preia parametrii de eroare din URL
+const { url } = Astro;
+const errorCode = url.searchParams.get("e") || "Eroare necunoscută";
+const errorDescription =
+  url.searchParams.get("d") || "Nu am putut obține detalii despre eroare.";
+
+// Extrage și decodează corect
+const decodedCode = decodeURIComponent(errorCode);
+const decodedDescription = decodeURIComponent(errorDescription);
+
+// Verifică dacă este eroarea specifică de bază de date
+const isDatabaseError = decodedDescription.includes(
+  "Database error saving new user"
+);
+
+// Verifică dacă există o pagină de login, altfel folosește root-ul
+const loginPath = "/login";
+---
+
+<Layout title="Eroare Autentificare">
+  <div
+    class="flex items-center justify-center min-h-screen bg-grayLight font-text"
+  >
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md space-y-6">
+      <h1 class="text-3xl font-bold text-center text-red-600">
+        🚨 Eroare Autentificare
+      </h1>
+      <p class="text-center text-sm text-text">
+        A apărut o problemă în timpul procesului de autentificare.
+      </p>
+
+      <div class="space-y-4 pt-4 border-t border-gray-200">
+        <details class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <summary
+            class="font-bold text-text cursor-pointer hover:text-primary transition"
+          >
+            Click pentru Detalii Tehnice
+          </summary>
+
+          <div class="mt-3 space-y-2 text-sm text-gray-700">
+            <p>
+              <strong>Cod Eroare:</strong>
+              <span class="text-red-500 font-mono break-all">{decodedCode}</span
+              >
+            </p>
+            <p>
+              <strong>Descriere:</strong>
+              <span class="font-mono break-all">{decodedDescription}</span>
+            </p>
+          </div>
+        </details>
+
+        {
+          isDatabaseError && (
+            <div class="bg-red-50 p-4 rounded-lg border border-red-300">
+              <h3 class="font-semibold text-red-700 mb-2">
+                💡 Sfaturi pentru depanare (Bază de date):
+              </h3>
+              <ul class="list-disc list-inside space-y-1 text-sm text-red-700">
+                <li>
+                  Verifică **log-urile** bazei de date (Postgres Logs) din
+                  tabloul de bord Supabase.
+                </li>
+                <li>
+                  Dacă folosești un **trigger** pentru a crea un profil de
+                  utilizator, asigură-te că **nu eșuează** (ex: valoare `NULL`
+                  într-o coloană `NOT NULL`).
+                </li>
+                <li>
+                  Asigură-te că trigger-ul are **permisiunile necesare** de a
+                  executa.
+                </li>
+              </ul>
+            </div>
+          )
+        }
+      </div>
+
+      <a
+        href={loginPath}
+        class="block w-full text-center py-2 px-4 bg-primary text-white rounded-lg hover:bg-opacity-90 transition font-medium"
+      >
+        Înapoi la Login
+      </a>
+    </div>
+  </div>
+</Layout>

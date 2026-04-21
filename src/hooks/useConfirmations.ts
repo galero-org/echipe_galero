@@ -7,16 +7,16 @@ interface UseConfirmationsReturn {
   error: string | null;
   fetchRegistrations: (editionId: number | "") => void;
   addConfirmation: (
-    newRegData: Omit<Registration, "id"> & {
+    newRegData: Omit<Registration, "id" | "edition_id"> & {
       player_id: string;
-      numar_editie: number;
       players?: Player;
-    }
+      numar_editie: number;
+    },
   ) => Promise<Registration | null>;
   updateConfirmationStatus: (
     id: string,
     status: Registration["status"],
-    newRegisteredAt: string
+    newRegisteredAt: string,
   ) => Promise<void>;
   updateConfirmationPayment: (id: string, payment: number) => Promise<void>;
   deleteConfirmation: (id: string) => Promise<void>;
@@ -27,23 +27,28 @@ const API_URL = "/api/confirmari";
 export const useConfirmations = (): UseConfirmationsReturn => {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null); // Ordinea Statusurilor
 
   const statusOrder = { inscris: 1, rezerva: 2, retras: 3 };
 
   const sortRegistrations = useCallback(
     (regs: Registration[]): Registration[] => {
       return [...regs].sort((a, b) => {
-        const statusA = statusOrder[a.status];
-        const statusB = statusOrder[b.status];
-        if (statusA !== statusB) return statusA - statusB;
+        const statusA = statusOrder[a.status] || 99; // 99 pentru statusuri necunoscute
+        const statusB = statusOrder[b.status] || 99; // 1. Prioritate după status
+
+        if (statusA !== statusB) {
+          return statusA - statusB;
+        } // 2. Dacă statusurile sunt identice ("inscris" sau "rezerva"), sortăm după data înregistrării
+        // Aceasta este crucială pentru a menține ordinea corectă a rezervelor.
+
         return (
           new Date(a.registered_at).getTime() -
           new Date(b.registered_at).getTime()
         );
       });
     },
-    []
+    [],
   );
 
   const fetchRegistrations = useCallback(
@@ -59,7 +64,7 @@ export const useConfirmations = (): UseConfirmationsReturn => {
         const res = await fetch(`${API_URL}?editionId=${editionId}`);
         if (!res.ok)
           throw new Error(
-            `Eroare API la preluarea confirmărilor: ${res.statusText}`
+            `Eroare API la preluarea confirmărilor: ${res.statusText}`,
           );
         const data = await res.json();
         setRegistrations(sortRegistrations(data));
@@ -75,15 +80,15 @@ export const useConfirmations = (): UseConfirmationsReturn => {
         setLoading(false);
       }
     },
-    [sortRegistrations]
+    [sortRegistrations],
   );
 
   const addConfirmation = async (
-    newRegData: Omit<Registration, "id"> & {
+    newRegData: Omit<Registration, "id" | "edition_id"> & {
       player_id: string;
-      numar_editie: number;
       players?: Player;
-    }
+      numar_editie: number;
+    },
   ) => {
     setLoading(true);
     setError(null);
@@ -96,17 +101,20 @@ export const useConfirmations = (): UseConfirmationsReturn => {
           registered_at: newRegData.registered_at,
           player_id: newRegData.player_id,
           numar_editie: newRegData.numar_editie,
-          payment: newRegData.payment || 25,
         }),
       });
       if (!res.ok)
         throw new Error(
-          `Eroare API la adăugarea confirmării: ${res.statusText}`
+          `Eroare API la adăugarea confirmării: ${res.statusText}`,
         );
       const addedReg = await res.json();
-      const augmentedNewReg = { ...addedReg, players: newRegData.players };
-      setRegistrations((prev) => sortRegistrations([...prev, augmentedNewReg]));
-      return augmentedNewReg;
+
+      // Ensure we have the complete registration with players data
+      if (addedReg && addedReg.id) {
+        setRegistrations((prev) => sortRegistrations([...prev, addedReg]));
+      }
+
+      return addedReg;
     } catch (err) {
       console.error("Eroare la adăugarea confirmării:", err);
       const message =
@@ -121,26 +129,26 @@ export const useConfirmations = (): UseConfirmationsReturn => {
   const updateConfirmationStatus = async (
     id: string,
     status: Registration["status"],
-    newRegisteredAt: string
+    newRegisteredAt: string,
   ) => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(API_URL, {
-        method: "PUT", // Sau PATCH, depinde cum e configurat backend-ul tău
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status, registered_at: newRegisteredAt }),
       });
       if (!res.ok)
         throw new Error(
-          `Eroare API la actualizarea statusului: ${res.statusText}`
+          `Eroare API la actualizarea statusului: ${res.statusText}`,
         );
       setRegistrations((prev) =>
         sortRegistrations(
           prev.map((r) =>
-            r.id === id ? { ...r, status, registered_at: newRegisteredAt } : r
-          )
-        )
+            r.id === id ? { ...r, status, registered_at: newRegisteredAt } : r,
+          ),
+        ),
       );
     } catch (err) {
       console.error("Eroare la actualizarea statusului:", err);
@@ -154,23 +162,21 @@ export const useConfirmations = (): UseConfirmationsReturn => {
     }
   };
 
-  // NOUA FUNCȚIE: Actualizează doar câmpul 'payment'
   const updateConfirmationPayment = async (id: string, payment: number) => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(API_URL, {
-        method: "PUT", // Folosește PUT sau PATCH, în funcție de API-ul tău
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, payment }), // Trimitem ID-ul și noua valoare a plății
+        body: JSON.stringify({ id, payment }),
       });
       if (!res.ok)
         throw new Error(`Eroare API la actualizarea plății: ${res.statusText}`);
-      // Actualizează starea locală cu noua valoare a plății
       setRegistrations((prev) =>
         sortRegistrations(
-          prev.map((r) => (r.id === id ? { ...r, payment } : r))
-        )
+          prev.map((r) => (r.id === id ? { ...r, payment } : r)),
+        ),
       );
     } catch (err) {
       console.error("Eroare la actualizarea plății:", err);
@@ -193,10 +199,10 @@ export const useConfirmations = (): UseConfirmationsReturn => {
       });
       if (!res.ok)
         throw new Error(
-          `Eroare API la ștergerea confirmării: ${res.statusText}`
+          `Eroare API la ștergerea confirmării: ${res.statusText}`,
         );
       setRegistrations((prev) =>
-        sortRegistrations(prev.filter((r) => r.id !== id))
+        sortRegistrations(prev.filter((r) => r.id !== id)),
       );
     } catch (err) {
       console.error("Eroare la ștergerea confirmării:", err);
@@ -215,7 +221,7 @@ export const useConfirmations = (): UseConfirmationsReturn => {
     fetchRegistrations,
     addConfirmation,
     updateConfirmationStatus,
-    updateConfirmationPayment, // Exportăm noua funcție
+    updateConfirmationPayment,
     deleteConfirmation,
   };
 };

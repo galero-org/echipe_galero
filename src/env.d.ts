@@ -1,13 +1,13 @@
 /// <reference types="astro/client" />
 
-import type { User } from "@supabase/supabase-js";
-import type { UserProfile } from "./lib/types"; // Adică din src/lib/types.ts
+import type { AuthenticatedUserWithProfile } from "./lib/authService";
 
 declare global {
   namespace App {
     interface Locals {
-      user: User | null;
-      profile: UserProfile | null;
+      user: AuthenticatedUserWithProfile | null;
+
+      profile: AuthenticatedUserWithProfile["profile"] | null;
     }
   }
 

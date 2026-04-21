@@ -1,119 +1,105 @@
-import { supabase } from "./supabase"; // Asigură-te că ai configurat exportul supabase în ./supabase.ts
-import type { User as SupabaseUser } from "@supabase/supabase-js";
-import type { UserProfile } from "./types"; // Asigură-te că tipul UserProfile este definit corect în ./types.ts
+// src/lib/authService.ts
+import { supabase } from "./supabase"; // Ajustează calea
+import type { User as SupabaseUser, User } from "@supabase/supabase-js";
+import type { UserProfile } from "./types"; // Tipul tău UserProfile
+
+// Extindem tipul de bază al utilizatorului Supabase
+export type AuthenticatedUserWithProfile = SupabaseUser & {
+  profile: UserProfile;
+};
 
 interface SessionResult {
-  user: SupabaseUser | null;
+  session: AuthenticatedUserWithProfile | null;
   error?: { message: string; status?: number };
 }
 
 /**
- * Setează și validează sesiunea Supabase folosind token-urile furnizate.
- * @param accessToken Token-ul de acces Supabase.
- * @param refreshToken Token-ul de reîmprospătare Supabase.
- * @returns Un obiect conținând utilizatorul Supabase sau o eroare.
+ * ⚡ OPTIMIZAT: Setează și validează sesiunea Supabase
+ * și extrage datele profilului din metadatele User.
+ * Elimină al doilea apel la tabela 'profiles'.
  */
-export async function manageAuthSession(
+export async function getAuthenticatedSession(
   accessToken: string,
-  refreshToken: string
+  refreshToken: string,
 ): Promise<SessionResult> {
-  console.log("[AuthService] Încercare de a seta sesiunea Supabase.");
+  console.log("[AuthService] Tentativă de a seta sesiunea (Single-Call).");
+
+  // UN SINGUR APEL LA SUPABASE AUTH
   const { data, error } = await supabase.auth.setSession({
     access_token: accessToken,
     refresh_token: refreshToken,
   });
 
-  if (error) {
+  if (error || !data?.user) {
     console.warn(
-      "[AuthService] Eroare la supabase.auth.setSession:",
-      error.message
+      "[AuthService] Eroare la setSession sau lipsă user:",
+      error?.message || "User missing",
     );
     return {
-      user: null,
-      error: { message: error.message, status: error.status },
+      session: null,
+      error: {
+        message: error?.message || "Nicio dată de utilizator returnată.",
+        status: error?.status,
+      },
     };
   }
-  if (!data?.user) {
-    console.warn(
-      "[AuthService] setSession a reușit, dar nu a returnat date despre utilizator."
-    );
-    return {
-      user: null,
-      error: { message: "Nicio dată de utilizator returnată după setSession." },
-    };
-  }
-  console.log(
-    `[AuthService] Sesiune Supabase setată cu succes pentru utilizatorul: ${data.user.id}`
-  );
-  return { user: data.user, error: undefined };
-}
 
-/**
- * Prelucrează profilul specific aplicației pentru un utilizator Supabase autentificat.
- * @param authUser Obiectul utilizator Supabase (rezultatul autentificării).
- * @returns Obiectul UserProfile specific aplicației sau null în caz de eroare/neprofil.
- */
-export async function fetchApplicationUserProfile(
-  authUser: SupabaseUser
-): Promise<UserProfile | null> {
-  if (!authUser) {
-    console.warn(
-      "[AuthService] fetchApplicationUserProfile apelat fără authUser."
-    );
-    return null;
+  const user = data.user;
+
+  // Extragem profilul direct din metadata sincronizată de trigger
+  let profileMetadata = user.user_metadata as Partial<UserProfile>;
+
+  // FALLBACK: Dacă metadata lipsește (de ex. pentru utilizatori creați înainte de trigger),
+  // setăm valorile implicite
+  if (!profileMetadata) {
+    profileMetadata = {};
   }
 
-  console.log(
-    `[AuthService] Preluare profil din DB pentru utilizatorul: ${authUser.id}`
-  );
+  // ⚠️ IMPORTANT: Asigură că au user_role, username, etc.
+  if (!profileMetadata.user_role) {
+    console.warn(
+      `[AuthService] User ${user.id} autentificat, dar user_role lipsește din metadata. Setez default: 'user'`,
+    );
+    profileMetadata.user_role = "user";
+  }
+
+  if (!profileMetadata.username) {
+    profileMetadata.username =
+      user.email?.split("@")[0] || `user_${user.id.slice(0, 8)}`;
+  }
+
+  if (!profileMetadata.full_name) {
+    profileMetadata.full_name =
+      user.user_metadata?.full_name || profileMetadata.username;
+  }
+
+  if (!profileMetadata.email) {
+    profileMetadata.email = user.email;
+  }
+
+  if (!profileMetadata.id) {
+    profileMetadata.id = user.id;
+  }
+
+  if (!profileMetadata.created_at) {
+    profileMetadata.created_at = user.created_at || new Date().toISOString();
+  }
+
+  // Alias for camelCase usage across the codebase
+  // (some modules expect `userRole` while metadata uses `user_role`)
   try {
-    const { data: dbProfile, error: dbProfileError } = await supabase
-      .from("profiles")
-      .select("role") // Asigură-te că selectezi toate câmpurile necesare pentru UserProfile
-      .eq("id", authUser.id)
-      .single();
-
-    if (dbProfileError) {
-      console.warn(
-        `[AuthService] Eroare la preluarea profilului din DB pentru utilizatorul ${authUser.id}:`,
-        dbProfileError.message
-      );
-      return null; // Returnează null dacă există o eroare la interogarea bazei de date
-    }
-    if (!dbProfile) {
-      console.warn(
-        `[AuthService] Profilul nu a fost găsit în DB pentru utilizatorul ${authUser.id}. Utilizatorul ar putea fi nou.`
-      );
-      // Poți alege să creezi un profil implicit aici sau să returnezi null
-      // și să lași alte părți ale aplicației să gestioneze acest caz.
-      return null;
-    }
-
-    console.log(
-      `[AuthService] Profil din DB găsit pentru utilizatorul ${authUser.id}. Se construiește UserProfile.`
-    );
-    // Construiește obiectul UserProfile
-    const userProfile: UserProfile = {
-      id: authUser.id,
-      username:
-        dbProfile.username ||
-        authUser.user_metadata?.full_name ||
-        authUser.email!,
-      avatar_url:
-        authUser.user_metadata?.avatar_url || dbProfile.avatar_url || null,
-      role: dbProfile.role as UserProfile["role"], // Este important ca 'role' să existe în dbProfile
-      created_at: authUser.created_at,
-      email: authUser.email, // Poate fi null dacă nu este expus de Supabase Auth sau nu e în user_metadata
-      phone: dbProfile.phone,
-      full_name: dbProfile.full_name || authUser.user_metadata?.full_name,
-    };
-    return userProfile;
-  } catch (e: any) {
-    console.error(
-      "[AuthService] Excepție în timpul preluării profilului utilizatorului:",
-      e.message,
-      e.stack
-    );
-    return null;
+    (profileMetadata as any).userRole = profileMetadata.user_role;
+  } catch (e) {
+    // ignore
   }
+
+  // Construim obiectul final, complet și rapid
+  const sessionWithProfile: AuthenticatedUserWithProfile = {
+    ...user,
+    profile: profileMetadata as UserProfile,
+  };
+
+  return { session: sessionWithProfile, error: undefined };
 }
+
+// ATENȚIE: Șterge funcțiile vechi manageAuthSession și fetchApplicationUserProfile

@@ -10,26 +10,24 @@ function jsonError(message: string, status: number) {
   });
 }
 
-// Optional: GET a single player by ID
-export const GET: APIRoute = async ({ params, locals }) => {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+// GET a single player by ID
+export const GET: APIRoute = async ({ params, locals }: APIContext) => {
+  const { user, profile } = locals; // <-- Luăm brățara de la portar
   const { id } = params;
 
-  if (!user) return jsonError("Not authenticated", 401);
+  if (!user || !profile) return jsonError("Not authenticated", 401);
   if (!id) return jsonError("Player ID is required", 400);
 
-  // You might still want a profile check here depending on requirements
-  // const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  // if (!profile) return jsonError("Profile not found", 404);
+  // Aici poți adăuga logica de rol dacă e nevoie
+  // de ex: if (profile.userRole !== 'admin' && player.private_data) { ... }
+  // Dar pentru un simplu GET, probabil e ok.
 
   try {
-    const player = await playerService.getById(
-      id /*, profile.role (optional) */
-    );
+    // Folosim direct rolul din profilul deja încărcat, dacă e necesar
+    const player = await playerService.getById(id /*, profile.userRole */);
+
     if (!player) return jsonError("Player not found", 404);
+
     return new Response(JSON.stringify(player), {
       headers: { "Content-Type": "application/json" },
     });
@@ -40,35 +38,30 @@ export const GET: APIRoute = async ({ params, locals }) => {
 };
 
 // PUT (update) an existing player
-export const PUT: APIRoute = async ({ request, params }: APIContext) => {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+export const PUT: APIRoute = async ({
+  request,
+  params,
+  locals,
+}: APIContext) => {
+  const { user, profile } = locals; // <-- Magie!
   const { id } = params;
 
-  if (!user) return jsonError("Not authenticated", 401);
+  if (!user || !profile) return jsonError("Not authenticated", 401);
   if (!id) return jsonError("Player ID is required in URL path", 400);
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) return jsonError("Profile not found for auth check", 404);
-  if (profile.role !== "admin" && profile.role !== "moderator")
-    return jsonError("Unauthorized to update player", 403);
+  // Orice user autentificat poate actualiza jucători
+  // (nu avem check de rol pentru update, doar pentru delete care e mai restrictiv)
 
   try {
     const updates = await request.json();
-    // Add validation for updates here if needed
     if (Object.keys(updates).length === 0) {
       return jsonError("No update data provided", 400);
     }
 
+    // Acum facem un singur drum la DB, pentru update
     const updatedPlayer = await playerService.update(id, updates);
     if (!updatedPlayer)
-      return jsonError("Player not found or update failed", 404); // Or playerService.update throws
+      return jsonError("Player not found or update failed", 404);
 
     return new Response(JSON.stringify(updatedPlayer), {
       status: 200,
@@ -84,46 +77,35 @@ export const PUT: APIRoute = async ({ request, params }: APIContext) => {
 
 // DELETE a player
 export const DELETE: APIRoute = async ({ params, locals }: APIContext) => {
-  // const { data: { user } } = await supabase.auth.getUser(); // Or use locals
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user, profile } = locals; // <-- Folosim locals!
   const { id } = params;
 
-  if (!user) return jsonError("Not authenticated", 401);
+  if (!user || !profile) return jsonError("Not authenticated", 401);
   if (!id) return jsonError("Player ID is required in URL path", 400);
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (!profile) return jsonError("Profile not found for auth check", 404);
-  if (profile.role !== "admin")
+  // Verificarea rolului. Instant.
+  if (profile.user_role !== "admin") {
     return jsonError("Unauthorized to delete player", 403);
+  }
 
   try {
-    const result = await playerService.remove(id); // Assume remove throws if not found or returns a status
-    // If playerService.remove doesn't throw on "not found" but returns null/false:
-    // if (!result) return jsonError("Player not found or delete failed", 404);
+    // Un singur drum la DB, pentru ștergere
+    await playerService.remove(id);
 
     return new Response(
       JSON.stringify({ success: true, message: "Player deleted successfully" }),
       {
-        status: 200, // Or 204 No Content with an empty body
+        status: 200,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
-    // Alternative for 204:
+    // Sau, dacă preferi 204:
     // return new Response(null, { status: 204 });
   } catch (err) {
     const msg =
       err instanceof Error ? err.message : "Unexpected error deleting player";
     console.error(msg, err);
-    // Handle specific errors, e.g., if playerService.remove indicates "not found" via error
     if (msg.toLowerCase().includes("not found")) {
-      // Example check
       return jsonError("Player not found", 404);
     }
     return jsonError(msg, 500);

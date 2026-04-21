@@ -1,9 +1,12 @@
 ---
-import Navbar from "../components/Navbar";
+// 1. Importă componenta ta Navbar
+import Navbar from "../components/Navbar.jsx";
+// 2. Extrage profilul din "locals". Middleware-ul l-a pus deja aici!
+const { profile } = Astro.locals;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="ro">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
@@ -13,7 +16,8 @@ import Navbar from "../components/Navbar";
     <title>Galero Cup</title>
   </head>
   <body>
-    <Navbar client:load />
+    <Navbar client:load profile={profile} />
+
     <slot />
   </body>
 

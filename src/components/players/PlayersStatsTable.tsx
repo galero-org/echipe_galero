@@ -17,7 +17,7 @@ export const PlayersWithdrawnList: React.FC<Props> = ({ players }) => {
       {/* Antetul paginii */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold font-khand text-primary flex items-center gap-2">
-          <Users size={28} /> Statistici retrageri
+          <Users size={28} /> Statistici retrageri - rușine!!!
         </h1>
       </div>
 

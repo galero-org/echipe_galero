@@ -7,28 +7,34 @@ export interface Player {
   grade: number;
   created_at?: string;
   position: PlayerField;
-  totalEditions: number; // Aceasta proprietate există deja pe Player
+  totalEditions: number;
 }
 
+export interface PlayerPreferences {
+  pairs?: [string, string][];
+  separations?: [string, string][];
+}
 export interface Team {
   id?: string;
   name: string;
   players: Player[];
   totalGrade: number;
   averageGrade?: number;
-  totalEditionsPlayed?: number; // Adăugat: suma prezențelor jucătorilor din echipă
-  averageEditionsPlayed?: number; // Adăugat: media prezențelor jucătorilor din echipă
-  color?: string; // hex (#FFAA00) sau nume ('blue')
+  totalEditionsPlayed?: number;
+  averageEditionsPlayed?: number;
+  color?: string;
   created_at?: string;
-  created_by?: string; // user id
+  created_by?: string;
 }
+
+export type UserRole = "admin" | "moderator" | "user" | "guest";
 
 export type UserProfile = {
   id: string;
   username: string;
   email?: string;
   avatar_url: string | null;
-  role: "admin" | "moderator" | "user";
+  user_role: UserRole;
   created_at: string;
   phone?: string;
   full_name?: string;
@@ -36,22 +42,19 @@ export type UserProfile = {
 
 export type PlayerField = "GK" | "FIELD";
 
-// Posibilele stări ale unei înscrieri
 export type RegistrationStatus = "inscris" | "rezerva" | "retras";
 
-// Reprezintă o înscriere într-un eveniment, cu jucători asociați
 export interface Registration {
   id: string;
   status: RegistrationStatus;
-  registered_at: string; // ISO datetime
+  registered_at: string;
   updated_at?: string;
   players: {
     id: string;
     full_name: string;
     grade?: number;
     email?: string;
-  }[];
-  user_id?: string; // cine a făcut înscrierea
-  edition_id: number; // Adaugă câmpul edition_id
-  payment: number;
+  };
+  user_id?: string;
+  edition_id: string;
 }

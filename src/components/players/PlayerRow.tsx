@@ -106,10 +106,26 @@ export const PlayerRow: React.FC<PlayerRowProps> = React.memo(
                   : "—"}
               </div>{" "}
               {/* */}
+              <div>
+                <strong>Nota Modificată La:</strong>{" "}
+                {player.grade_updated_at
+                  ? new Date(player.grade_updated_at).toLocaleDateString(
+                      "ro-RO",
+                      {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      },
+                    )
+                  : "Niciodată"}
+              </div>{" "}
+              {/* */}
             </td>
           </tr>
         )}
       </React.Fragment>
     );
-  }
+  },
 );

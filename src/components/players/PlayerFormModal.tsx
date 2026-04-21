@@ -1,4 +1,4 @@
-import React, { useState, useEffect, type FormEvent } from "react";
+import React, { useState, useEffect, useRef, type FormEvent } from "react";
 import { X } from "lucide-react"; //
 import type { Player, PlayerField } from "../../lib/types"; //
 
@@ -20,7 +20,7 @@ interface PlayerFormModalProps {
   // Funcția de submit primește datele și ID-ul (dacă e editare), returnează un boolean pentru succes
   onSubmit: (
     playerData: PlayerFormData,
-    editingPlayerId: string | null
+    editingPlayerId: string | null,
   ) => Promise<boolean>;
   editingPlayer: Player | null; // Jucătorul curent pentru editare, sau null pentru adăugare
   // Eroare specifică formularului, pasată de componenta părinte (dacă e cazul, ex: validare complexă)
@@ -38,9 +38,18 @@ export const PlayerFormModal: React.FC<PlayerFormModalProps> = ({
     useState<PlayerFormData>(initialModalFormData);
   // Eroare internă a formularului (ex: câmp obligatoriu necompletat)
   const [internalError, setInternalError] = useState<string | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
+      // Lock scroll pe body
+      document.body.style.overflow = "hidden";
+
+      // Focus management - focus pe modal container
+      setTimeout(() => {
+        modalRef.current?.focus();
+      }, 0);
+
       // Resetează formularul și erorile când modalul (re)devine vizibil
       if (editingPlayer) {
         //
@@ -60,7 +69,15 @@ export const PlayerFormModal: React.FC<PlayerFormModalProps> = ({
         setPlayerFormData(initialModalFormData); //
       }
       setInternalError(null); // Curăță eroarea internă la deschidere/schimbare jucător
+    } else {
+      // Unlock scroll cand modalul se inchide
+      document.body.style.overflow = "unset";
     }
+
+    return () => {
+      // Cleanup: restore scroll on unmount
+      document.body.style.overflow = "unset";
+    };
   }, [isOpen, editingPlayer]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -93,7 +110,7 @@ export const PlayerFormModal: React.FC<PlayerFormModalProps> = ({
 
     const success = await onSubmit(
       payload,
-      editingPlayer ? editingPlayer.id : null
+      editingPlayer ? editingPlayer.id : null,
     );
     if (success) {
       onClose(); // Închide modalul doar la succes
@@ -106,18 +123,33 @@ export const PlayerFormModal: React.FC<PlayerFormModalProps> = ({
 
   return (
     // Fundal semi-transparent pentru modal
-    <div className="fixed inset-0 bg-blackAlt bg-opacity-60 flex items-center justify-center p-4 z-50 transition-opacity duration-300 ease-in-out">
+    <div
+      className="fixed inset-0 bg-blackAlt bg-opacity-60 flex items-center justify-center p-4 z-50 transition-opacity duration-300 ease-in-out"
+      onClick={(e) => {
+        // Close only if clicking outside the modal
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       {" "}
       {/* */}
       {/* Containerul modalului */}
-      <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md transform transition-all duration-300 ease-in-out scale-100">
+      <div
+        className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md transform transition-all duration-300 ease-in-out scale-100"
+        ref={modalRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
         {" "}
         {/* */}
         {/* Antetul modalului */}
         <div className="flex justify-between items-center mb-4">
           {" "}
           {/* */}
-          <h2 className="text-2xl font-khand text-primary">
+          <h2 className="text-2xl font-khand text-primary" id="modal-title">
             {" "}
             {/* */}
             {editingPlayer ? "Modifică Jucător" : "Adaugă Jucător Nou"} {/* */}

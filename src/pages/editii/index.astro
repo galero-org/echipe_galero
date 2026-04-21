@@ -2,9 +2,11 @@
 import EditionsList from "../../components/editii/EditionList.tsx";
 import Layout from "../../layouts/Layout.astro";
 
-const res = await fetch(
-  "https://script.google.com/macros/s/AKfycbwB-PlNzvHwSzCyDZP0oXdP1QlU0Vw6vYjntUZ-rAwpzH9LwdECialOk9jDXCSrQH7O/exec"
-);
+// Presupunând că acesta este noul URL de listare a edițiilor
+const LIST_API_URL =
+  "https://script.google.com/macros/s/AKfycbzRrCwb7y1aW1x88DedUlU4GwXUn84Ahl8mumn0bL-DbAPx0rQACoz7a62RPIsCxla4/exec";
+
+const res = await fetch(LIST_API_URL);
 const editions = await res.json();
 ---
 

@@ -1,15 +1,8 @@
-// src/lib/authHelpers.ts
 import type { AstroGlobal } from "astro";
-// Asigură-te că UserProfile este importat corect și conține proprietatea 'role'
-import type { UserProfile } from "./types"; // Presupunând că types.ts este în același director (src/lib/)
-
-// Acest UserProfile este cel pe care îl populează middleware-ul în astro.locals.profile
-// și include proprietatea 'role'.
+import type { UserProfile } from "./types";
 
 interface AuthResult {
-  /** Profilul utilizatorului aplicației, dacă autentificarea și autorizarea au succes. */
   user: UserProfile | null;
-  /** Un obiect Response gata de returnat în caz de eroare (401 sau 403), util pentru rute API. */
   errorResponse?: Response;
 }
 
@@ -26,24 +19,11 @@ interface AuthResult {
  */
 export function requireAuthAndRole(
   astro: AstroGlobal, // Tipul simplificat și corect pentru contextul Astro
-  allowedRoles: Array<UserProfile["role"]> = []
+  allowedRoles: Array<UserProfile["userRole"]> = []
 ): AuthResult {
-  // TypeScript ar trebui să infereze corect tipurile pentru userFromLocals și profileFromLocals
-  // bazându-se pe augmentarea din src/env.d.ts:
-  // declare module "astro" {
-  //   interface Astro {
-  //     locals: {
-  //       user: SupabaseUser | null; // Tipul User din @supabase/supabase-js
-  //       profile: UserProfile | null; // Tipul tău UserProfile din ./lib/types
-  //     };
-  //   }
-  // }
   const userFromLocals = astro.locals.user;
   const profileFromLocals = astro.locals.profile;
 
-  // Verifică dacă atât utilizatorul Supabase, cât și profilul aplicației sunt prezenți în locals.
-  // Prezența lor indică faptul că middleware-ul a autentificat cu succes utilizatorul
-  // și a reușit (sau cel puțin a încercat) să încarce profilul.
   if (!userFromLocals || !profileFromLocals) {
     return {
       user: null, // Nu există profil de returnat
@@ -57,25 +37,21 @@ export function requireAuthAndRole(
     };
   }
 
-  // Din acest punct, profileFromLocals este garantat a fi un obiect UserProfile valid (nu null).
-
-  // Verifică rolul, dacă este specificat un set de roluri permise.
   if (
     allowedRoles.length > 0 &&
-    !allowedRoles.includes(profileFromLocals.role)
+    !allowedRoles.includes(profileFromLocals.userRole)
   ) {
     return {
-      user: profileFromLocals, // Returnează profilul existent, chiar dacă rolul nu e potrivit
+      user: profileFromLocals,
       errorResponse: new Response(
         JSON.stringify({ error: "Acces interzis: Rol insuficient" }),
         {
-          status: 403, // Forbidden
+          status: 403,
           headers: { "Content-Type": "application/json" },
         }
       ),
     };
   }
 
-  // Autentificare și autorizare (dacă allowedRoles a fost specificat) cu succes.
   return { user: profileFromLocals, errorResponse: undefined };
 }

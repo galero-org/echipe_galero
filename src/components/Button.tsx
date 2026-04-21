@@ -1,4 +1,3 @@
-// src/components/ui/Button.tsx (creează un nou director 'ui' pentru astfel de componente)
 import React from "react";
 
 type ButtonVariant =

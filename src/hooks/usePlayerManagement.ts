@@ -1,9 +1,7 @@
-// src/hooks/usePlayerManagement.ts
 import { useState, useEffect, useCallback } from "react";
-import type { Player } from "../lib/types"; //
+import type { Player } from "../lib/types";
 
-// Tipul pentru datele din formular, omițând câmpurile generate de server
-type PlayerFormData = Omit<Player, "id" | "created_at">; //
+type PlayerFormData = Omit<Player, "id" | "created_at">;
 
 interface UsePlayerManagementReturn {
   players: Player[];
@@ -16,8 +14,8 @@ interface UsePlayerManagementReturn {
     id: string,
     playerData: PlayerFormData
   ) => Promise<Player | null>;
-  deletePlayer: (id: string) => Promise<boolean>; // Returnează true la succes
-  clearMessages: () => void; // Pentru a curăța manual mesajele dacă e necesar
+  deletePlayer: (id: string) => Promise<boolean>;
+  clearMessages: () => void;
 }
 
 const API_URL_PLAYERS = "/api/players";
@@ -28,7 +26,6 @@ export const usePlayerManagement = (): UsePlayerManagementReturn => {
   const [error, setError] = useState<string | null>(null); //
   const [successMessage, setSuccessMessage] = useState<string | null>(null); //
 
-  // Helper pentru afișarea mesajelor temporare
   const displayTempMessage = (
     setter: React.Dispatch<React.SetStateAction<string | null>>,
     message: string
