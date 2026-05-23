@@ -137,6 +137,7 @@ export function generateTeams(
   teamCount: number,
   playersPerTeam: number,
   preferences: PlayerPreferences = {},
+  randomizationLevel: number = 0,
 ): Team[] {
   if (
     !selectedPlayers ||
@@ -146,6 +147,12 @@ export function generateTeams(
   ) {
     return [];
   }
+
+  // Normalizează randomizationLevel la 0-100
+  const normalizedRandomization = Math.max(
+    0,
+    Math.min(100, randomizationLevel),
+  );
 
   const totalPlayersNeeded = teamCount * playersPerTeam;
 
@@ -202,9 +209,47 @@ export function generateTeams(
 
   const sortedGrades = Array.from(playersByGrade.keys()).sort((a, b) => b - a);
   let playersToDistribute: Player[] = [];
-  for (const grade of sortedGrades) {
-    const players = playersByGrade.get(grade)!;
-    playersToDistribute.push(...shuffle(players)); // RANDOMIZARE AICI
+
+  // Aplicăm randomizare bazată pe nivel
+  if (normalizedRandomization === 0) {
+    // 0%: Distribuție sistematică originală
+    for (const grade of sortedGrades) {
+      const players = playersByGrade.get(grade)!;
+      playersToDistribute.push(...shuffle(players));
+    }
+  } else if (normalizedRandomization === 100) {
+    // 100%: Shuffle complet
+    playersToDistribute = shuffle(fieldPlayers);
+  } else {
+    // Parțial (ex: 50%): Mix de sistematic și random
+    for (const grade of sortedGrades) {
+      const players = playersByGrade.get(grade)!;
+      const shuffledPlayers = shuffle([...players]);
+      const randomCount = Math.ceil(
+        (shuffledPlayers.length * normalizedRandomization) / 100,
+      );
+
+      // Ia randomCount jucători random din acest grad
+      const randomFromGrade = shuffledPlayers.slice(0, randomCount);
+      const systematicFromGrade = shuffledPlayers.slice(randomCount);
+
+      // Adaugă întâi random, apoi sistematic
+      playersToDistribute.push(...randomFromGrade);
+      playersToDistribute.push(...systematicFromGrade);
+    }
+
+    // Amestecă puțin pentru a sparge pattern-ul sistematic
+    const partialShuffle = Math.floor(
+      (playersToDistribute.length * normalizedRandomization) / 100,
+    );
+    for (let i = 0; i < partialShuffle; i++) {
+      const idx1 = Math.floor(Math.random() * playersToDistribute.length);
+      const idx2 = Math.floor(Math.random() * playersToDistribute.length);
+      [playersToDistribute[idx1], playersToDistribute[idx2]] = [
+        playersToDistribute[idx2],
+        playersToDistribute[idx1],
+      ];
+    }
   }
 
   // --- 4. Procesarea Preferințelor (folosind noul helper) ---

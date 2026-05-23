@@ -22,6 +22,8 @@ interface Props {
   setBalanceTolerance: React.Dispatch<React.SetStateAction<number>>;
   balanceIterations: number;
   setBalanceIterations: React.Dispatch<React.SetStateAction<number>>;
+  randomizationLevel: number;
+  setRandomizationLevel: React.Dispatch<React.SetStateAction<number>>;
 }
 // --- END: Props actualizate ---
 
@@ -42,6 +44,8 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
   setBalanceTolerance,
   balanceIterations,
   setBalanceIterations,
+  randomizationLevel,
+  setRandomizationLevel,
   // --- END: Destructurare props noi ---
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -335,7 +339,7 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
         ) : null}
 
         {/* Sub-secțiune Parametri Echilibrare */}
-        <div className="grid md:grid-cols-2 gap-4 border-t pt-4">
+        <div className="grid md:grid-cols-3 gap-4 border-t pt-4">
           <div>
             <label
               htmlFor="balance-tolerance"
@@ -368,6 +372,31 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
               onChange={(e) => setBalanceIterations(Number(e.target.value))}
               className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"
             />
+          </div>
+          <div>
+            <label
+              htmlFor="randomization-level"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Randomizare: <strong>{randomizationLevel}%</strong>
+            </label>
+            <input
+              type="range"
+              id="randomization-level"
+              min="0"
+              max="100"
+              step="10"
+              value={randomizationLevel}
+              onChange={(e) => setRandomizationLevel(Number(e.target.value))}
+              className="mt-1 w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {randomizationLevel === 0
+                ? "Sistematic (asemănătoare)"
+                : randomizationLevel === 100
+                  ? "Complet random (diferite)"
+                  : "Mix (recomandat)"}
+            </p>
           </div>
         </div>
       </div>
