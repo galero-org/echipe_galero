@@ -30,6 +30,7 @@ const TeamOrchestrator: React.FC<Props> = ({
   });
   const [balanceTolerance, setBalanceTolerance] = useState<number>(1);
   const [balanceIterations, setBalanceIterations] = useState<number>(20);
+  const [randomizationLevel, setRandomizationLevel] = useState<number>(0);
 
   // --- Logica de preselecție (din ediția anterioară) ---
   useEffect(() => {
@@ -54,6 +55,7 @@ const TeamOrchestrator: React.FC<Props> = ({
       teamCount,
       playersPerTeam,
       preferences,
+      randomizationLevel,
     );
 
     // Pasul 2: Post-procesare
@@ -87,6 +89,8 @@ const TeamOrchestrator: React.FC<Props> = ({
         setBalanceTolerance={setBalanceTolerance}
         balanceIterations={balanceIterations}
         setBalanceIterations={setBalanceIterations}
+        randomizationLevel={randomizationLevel}
+        setRandomizationLevel={setRandomizationLevel}
       />
 
       {showTeams && generatedTeams.length > 0 && (
