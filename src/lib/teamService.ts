@@ -149,7 +149,10 @@ export function generateTeams(
   }
 
   // Normalizează randomizationLevel la 0-100
-  const normalizedRandomization = Math.max(0, Math.min(100, randomizationLevel));
+  const normalizedRandomization = Math.max(
+    0,
+    Math.min(100, randomizationLevel),
+  );
 
   const totalPlayersNeeded = teamCount * playersPerTeam;
 
@@ -206,7 +209,7 @@ export function generateTeams(
 
   const sortedGrades = Array.from(playersByGrade.keys()).sort((a, b) => b - a);
   let playersToDistribute: Player[] = [];
-  
+
   // Aplicăm randomizare bazată pe nivel
   if (normalizedRandomization === 0) {
     // 0%: Distribuție sistematică originală
@@ -222,23 +225,30 @@ export function generateTeams(
     for (const grade of sortedGrades) {
       const players = playersByGrade.get(grade)!;
       const shuffledPlayers = shuffle([...players]);
-      const randomCount = Math.ceil((shuffledPlayers.length * normalizedRandomization) / 100);
-      
+      const randomCount = Math.ceil(
+        (shuffledPlayers.length * normalizedRandomization) / 100,
+      );
+
       // Ia randomCount jucători random din acest grad
       const randomFromGrade = shuffledPlayers.slice(0, randomCount);
       const systematicFromGrade = shuffledPlayers.slice(randomCount);
-      
+
       // Adaugă întâi random, apoi sistematic
       playersToDistribute.push(...randomFromGrade);
       playersToDistribute.push(...systematicFromGrade);
     }
-    
+
     // Amestecă puțin pentru a sparge pattern-ul sistematic
-    const partialShuffle = Math.floor((playersToDistribute.length * normalizedRandomization) / 100);
+    const partialShuffle = Math.floor(
+      (playersToDistribute.length * normalizedRandomization) / 100,
+    );
     for (let i = 0; i < partialShuffle; i++) {
       const idx1 = Math.floor(Math.random() * playersToDistribute.length);
       const idx2 = Math.floor(Math.random() * playersToDistribute.length);
-      [playersToDistribute[idx1], playersToDistribute[idx2]] = [playersToDistribute[idx2], playersToDistribute[idx1]];
+      [playersToDistribute[idx1], playersToDistribute[idx2]] = [
+        playersToDistribute[idx2],
+        playersToDistribute[idx1],
+      ];
     }
   }
 

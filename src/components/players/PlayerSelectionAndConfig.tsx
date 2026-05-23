@@ -391,9 +391,11 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
               className="mt-1 w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600"
             />
             <p className="text-xs text-gray-500 mt-1">
-              {randomizationLevel === 0 ? "Sistematic (asemănătoare)" : 
-               randomizationLevel === 100 ? "Complet random (diferite)" : 
-               "Mix (recomandat)"}
+              {randomizationLevel === 0
+                ? "Sistematic (asemănătoare)"
+                : randomizationLevel === 100
+                  ? "Complet random (diferite)"
+                  : "Mix (recomandat)"}
             </p>
           </div>
         </div>
