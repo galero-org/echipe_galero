@@ -18,6 +18,10 @@ const { profile } = Astro.locals;
     <Navbar client:load profile={profile} />
 
     <slot />
+    <script type="module">
+      import { registerSW } from 'virtual:pwa-register';
+      registerSW({ immediate: true });
+    </script>
   </body>
 
   <style>
