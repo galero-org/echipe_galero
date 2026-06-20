@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { Player, Team, PlayerPreferences } from "../lib/types";
 import PlayerSelectionAndConfig from "./players/PlayerSelectionAndConfig";
 import GeneratedTeamsDisplay from "./GenerateTeamsDisplay";
-import { generateTeams, balanceTeamsPostProcess } from "../lib/teamService";
+import { generateTeams } from "../lib/teamService";
 
 interface Props {
   allPlayers: Player[];
@@ -22,17 +22,12 @@ const TeamOrchestrator: React.FC<Props> = ({
   const [playersPerTeam, setPlayersPerTeam] = useState<number>(6);
   const [generatedTeams, setGeneratedTeams] = useState<Team[]>([]);
   const [showTeams, setShowTeams] = useState<boolean>(false);
-
-  // --- Setările noi pentru preferințe și echilibrare ---
   const [preferences, setPreferences] = useState<PlayerPreferences>({
     pairs: [],
     separations: [],
   });
-  const [balanceTolerance, setBalanceTolerance] = useState<number>(1);
-  const [balanceIterations, setBalanceIterations] = useState<number>(20);
-  const [randomizationLevel, setRandomizationLevel] = useState<number>(0);
 
-  // --- Logica de preselecție (din ediția anterioară) ---
+  // Auto-populate from registered players
   useEffect(() => {
     const registered = allPlayers.filter((p) =>
       registeredPlayerIds.includes(p.id),
@@ -44,29 +39,20 @@ const TeamOrchestrator: React.FC<Props> = ({
     const totalPlayersNeeded = teamCount * playersPerTeam;
     if (selectedPlayers.length < totalPlayersNeeded) {
       alert(
-        `Nu sunt suficienți jucători selectați (${selectedPlayers.length}) pentru ${teamCount} echipe a câte ${playersPerTeam} jucători (${totalPlayersNeeded} necesari).`,
+        `Not enough players selected (${selectedPlayers.length}) for ${teamCount} teams of ${playersPerTeam} players (${totalPlayersNeeded} needed).`,
       );
       return;
     }
 
-    // Pasul 1: Generare inițială
-    const initialTeams = generateTeams(
+    // Generate teams using snake draft algorithm
+    const teams = generateTeams(
       selectedPlayers,
       teamCount,
       playersPerTeam,
       preferences,
-      randomizationLevel,
     );
 
-    // Pasul 2: Post-procesare
-    const balancedTeams = balanceTeamsPostProcess(
-      initialTeams,
-      preferences,
-      balanceIterations,
-      balanceTolerance,
-    );
-
-    setGeneratedTeams(balancedTeams);
+    setGeneratedTeams(teams);
     setShowTeams(true);
   };
 
@@ -82,15 +68,8 @@ const TeamOrchestrator: React.FC<Props> = ({
         setPlayersPerTeam={setPlayersPerTeam}
         onGenerate={handleGenerateTeams}
         edition_id={edition_id}
-        // --- Props noi pentru configurare ---
         preferences={preferences}
         setPreferences={setPreferences}
-        balanceTolerance={balanceTolerance}
-        setBalanceTolerance={setBalanceTolerance}
-        balanceIterations={balanceIterations}
-        setBalanceIterations={setBalanceIterations}
-        randomizationLevel={randomizationLevel}
-        setRandomizationLevel={setRandomizationLevel}
       />
 
       {showTeams && generatedTeams.length > 0 && (
@@ -99,8 +78,8 @@ const TeamOrchestrator: React.FC<Props> = ({
           teamCount={teamCount}
           edition_id={edition_id}
           numarEditie={numarEditie}
-          preferences={preferences} // <-- Trimitem preferințele
-          allPlayers={allPlayers} // <-- Trimitem toți jucătorii (pentru nume)
+          preferences={preferences}
+          allPlayers={allPlayers}
         />
       )}
     </div>

@@ -1,11 +1,9 @@
 import { useState } from "react";
-import type { UserProfile } from "../lib/types";
 
 interface NavbarProps {
-  profile: UserProfile | null;
+  profile?: any | null;
 }
 
-// Acceptăm profilul direct ca prop
 export default function Navbar({ profile }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -32,27 +30,28 @@ export default function Navbar({ profile }: NavbarProps) {
       href: "/statistici",
       roles: ["admin", "moderator", "user"],
     },
-    {
-      name: "Editii",
-      href: "/editii",
-      roles: ["admin", "moderator", "user"],
-    },
-    {
-      // LINK NOU PENTRU ADMIN
-      name: "Utilizatori (Admin)",
-      href: "/admin/users",
-      roles: ["admin"],
-    },
+    { name: "Editii", href: "/editii", roles: ["admin", "moderator", "user"] },
+    { name: "Utilizatori (Admin)", href: "/admin/users", roles: ["admin"] },
     {
       name: "Despre Galero Cup",
       href: "/about",
-      // Păstrăm guest aici
       roles: ["admin", "moderator", "user", "guest"],
     },
     { name: "Profil", href: "/profil", roles: ["admin", "moderator", "user"] },
-    // Afișează Sign In doar dacă nu este autentificat
     { name: "Sign In", href: "/signin", roles: ["guest"] },
   ];
+
+  const filteredLinks = navLinks.filter((link) =>
+    link.roles.includes(userRole),
+  );
+
+  async function handleSignOut() {
+    try {
+      await fetch("/api/auth/signout", { method: "POST" });
+    } finally {
+      if (typeof window !== "undefined") window.location.href = "/signin";
+    }
+  }
 
   return (
     <nav className="bg-background border-b border-border px-4 py-3 md:px-6 shadow-sm">
@@ -68,74 +67,54 @@ export default function Navbar({ profile }: NavbarProps) {
         <button
           title="Meniu Mobil"
           type="button"
-          onClick={() => {
-            console.log("Buton mobil clicked, isOpen was:", isOpen);
-            setIsOpen(!isOpen);
-          }}
+          onClick={() => setIsOpen(!isOpen)}
           className="inline-flex items-center p-2 ml-3 text-sm text-text-muted rounded-lg md:hidden hover:bg-surface focus:outline-none focus:ring-2 focus:ring-primary"
           aria-expanded={isOpen}
           aria-controls="mobile-menu"
         >
           <span className="sr-only">Deschide meniul principal</span>
-          <svg
-            className="w-6 h-6"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              fillRule="evenodd"
-              d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-              clipRule="evenodd"
-            ></path>
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M3 5h14M3 10h14M3 15h14" />
           </svg>
         </button>
 
-        {/* Meniu - show/hide based on isOpen state */}
         {isOpen && (
           <div className="w-full md:hidden block" id="mobile-menu">
             <ul className="flex flex-col mt-4 md:flex-row md:space-x-8 md:mt-0 md:text-sm font-medium font-sans">
-              {navLinks
-                // Filtrează Sign In dacă utilizatorul este autentificat (profile?.id există)
-                .filter((link) => {
-                  const isGuestLink = link.name === "Sign In";
-                  const isAuthenticated = profile?.id;
+              {filteredLinks.map((link) => (
+                <li key={link.href}>
+                  <a
+                    href={link.href}
+                    onClick={() => setIsOpen(false)}
+                    className="block py-2 pr-4 pl-3 text-text-base rounded hover:text-primary transition-colors"
+                  >
+                    {link.name}
+                  </a>
+                </li>
+              ))}
 
-                  // Dacă este linkul de Sign In, afișează-l doar dacă NU e autentificat
-                  if (isGuestLink) {
-                    return !isAuthenticated;
-                  }
-
-                  // Altfel, afișează linkul dacă rolul este inclus
-                  return link.roles.includes(userRole);
-                })
-                .map((link) => (
-                  <li key={link.href}>
-                    <a
-                      href={link.href}
-                      onClick={() => setIsOpen(false)}
-                      className="block py-2 pr-4 pl-3 text-text-base rounded hover:text-primary transition-colors"
-                      aria-current={
-                        typeof window !== "undefined" &&
-                        window.location.pathname === link.href
-                          ? "page"
-                          : undefined
-                      }
-                    >
-                      {link.name}
+              {!profile && (
+                <>
+                  <li>
+                    <a href="/signin" className="block py-2 pr-4 pl-3">
+                      Sign In
                     </a>
                   </li>
-                ))}
-              {profile?.id && (
+                  <li>
+                    <a href="/register" className="block py-2 pr-4 pl-3">
+                      Register
+                    </a>
+                  </li>
+                </>
+              )}
+
+              {profile && (
                 <li>
                   <button
-                    onClick={async () => {
-                      await fetch("/api/auth/signout", { method: "POST" });
-                      window.location.href = "/signin";
-                    }}
+                    onClick={handleSignOut}
                     className="text-error hover:underline pl-3 py-2 block font-medium"
                   >
-                    Logout ({userRole})
+                    Logout
                   </button>
                 </li>
               )}
@@ -143,46 +122,41 @@ export default function Navbar({ profile }: NavbarProps) {
           </div>
         )}
 
-        {/* Desktop menu */}
         <div className="hidden md:flex items-center md:space-x-8">
           <ul className="flex flex-row md:space-x-8 md:text-sm font-medium font-sans">
-            {navLinks
-              .filter((link) => {
-                const isGuestLink = link.name === "Sign In";
-                const isAuthenticated = profile?.id;
+            {filteredLinks.map((link) => (
+              <li key={link.href}>
+                <a
+                  href={link.href}
+                  className="py-2 pr-4 pl-3 text-text-base rounded hover:text-primary transition-colors"
+                >
+                  {link.name}
+                </a>
+              </li>
+            ))}
 
-                if (isGuestLink) {
-                  return !isAuthenticated;
-                }
-
-                return link.roles.includes(userRole);
-              })
-              .map((link) => (
-                <li key={link.href}>
-                  <a
-                    href={link.href}
-                    className="py-2 pr-4 pl-3 text-text-base rounded hover:text-primary transition-colors"
-                    aria-current={
-                      typeof window !== "undefined" &&
-                      window.location.pathname === link.href
-                        ? "page"
-                        : undefined
-                    }
-                  >
-                    {link.name}
+            {!profile && (
+              <>
+                <li>
+                  <a href="/signin" className="py-2 pr-4 pl-3">
+                    Sign In
                   </a>
                 </li>
-              ))}
-            {profile?.id && (
+                <li>
+                  <a href="/register" className="py-2 pr-4 pl-3">
+                    Register
+                  </a>
+                </li>
+              </>
+            )}
+
+            {profile && (
               <li>
                 <button
-                  onClick={async () => {
-                    await fetch("/api/auth/signout", { method: "POST" });
-                    window.location.href = "/signin";
-                  }}
+                  onClick={handleSignOut}
                   className="text-error hover:underline pl-3 py-2 font-medium"
                 >
-                  Logout ({userRole})
+                  Logout
                 </button>
               </li>
             )}

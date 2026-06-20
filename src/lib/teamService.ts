@@ -1,7 +1,7 @@
 import type { Player, Team, PlayerPreferences } from "./types";
 
 // ========================================================================
-// Configurare
+// Team Configuration
 // ========================================================================
 
 const priorityTeamsConfig = [
@@ -39,22 +39,23 @@ const fallbackTeamBaseColors = [
 ];
 
 // ========================================================================
-// Funcții Ajutătoare (Helpers)
+// Helper Functions
 // ========================================================================
 
 /**
- * Amestecă un array pe loc folosind algoritmul Fisher-Yates.
+ * Fisher-Yates shuffle algorithm
  */
 const shuffle = <T>(array: T[]): T[] => {
-  for (let i = array.length - 1; i > 0; i--) {
+  const copy = [...array];
+  for (let i = copy.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
+    [copy[i], copy[j]] = [copy[j], copy[i]];
   }
-  return array;
+  return copy;
 };
 
 /**
- * Generează clase CSS de fallback.
+ * Generate fallback CSS classes for teams
  */
 const generateFallbackCardClasses = (baseColor: string): string => {
   const colorName = baseColor.split("-")[1];
@@ -62,8 +63,7 @@ const generateFallbackCardClasses = (baseColor: string): string => {
 };
 
 /**
- * Construiește Map-uri pentru căutare rapidă a preferințelor.
- * (Folosește player.id)
+ * Build preference maps for quick lookup
  */
 interface PreferenceMaps {
   pairMap: Map<string, Set<string>>;
@@ -75,7 +75,6 @@ const buildPreferenceMaps = (
 ): PreferenceMaps => {
   const { pairs = [], separations = [] } = preferences;
 
-  // Schimb: pairMap e acum Map<string, Set<string>> pentru a stoca TOATE perechele
   const pairMap = new Map<string, Set<string>>();
   pairs.forEach(([p1Id, p2Id]) => {
     if (!pairMap.has(p1Id)) pairMap.set(p1Id, new Set());
@@ -96,48 +95,54 @@ const buildPreferenceMaps = (
 };
 
 /**
- * (OPTIMIZARE) Verifică dacă un grup de jucători (1 sau 2)
- * poate fi adăugat într-o echipă, respectând regulile.
- * (Actualizat să folosească player.id)
+ * Check if a player can be placed in a team (respects separations)
  */
-const canPlaceInTeam = (
-  playersToPlace: Player[],
+const canPlacePlayerInTeam = (
+  player: Player,
   targetTeam: Team,
   playersPerTeam: number,
   separationMap: Map<string, Set<string>>,
 ): boolean => {
-  // 1. Verifică spațiul
-  if (targetTeam.players.length + playersToPlace.length > playersPerTeam) {
+  // Check if team is full
+  if (targetTeam.players.length >= playersPerTeam) {
     return false;
   }
 
-  // 2. Verifică separările
-  const teamPlayerIds = new Set(targetTeam.players.map((p) => p.id)); // <-- MODIFICAT
+  // Check separations
+  const teamPlayerIds = new Set(targetTeam.players.map((p) => p.id));
+  const forbiddenPartners = separationMap.get(player.id);
 
-  for (const player of playersToPlace) {
-    const forbiddenPartners = separationMap.get(player.id); // <-- MODIFICAT
-    if (forbiddenPartners) {
-      for (const forbiddenName of forbiddenPartners) {
-        if (teamPlayerIds.has(forbiddenName)) {
-          return false; // Conflict! Un jucător din echipă nu e dorit.
-        }
+  if (forbiddenPartners) {
+    for (const forbiddenId of forbiddenPartners) {
+      if (teamPlayerIds.has(forbiddenId)) {
+        return false;
       }
     }
   }
 
-  return true; // Totul e ok
+  return true;
 };
 
 // ========================================================================
-// Funcția Principală de Generare (Actualizată cu player.id)
+// Main Team Generation - Snake Draft Algorithm
 // ========================================================================
 
+/**
+ * Generate teams using a fair snake draft algorithm.
+ *
+ * How it works:
+ * 1. Create all teams
+ * 2. Distribute players in snake order (alternating direction each round)
+ *    - Round 1: Team 1 → Team 2 → ... → Team N
+ *    - Round 2: Team N → Team N-1 → ... → Team 1
+ *    - Repeat until all players placed
+ * 3. This ensures fair distribution of skill levels across teams
+ */
 export function generateTeams(
   selectedPlayers: Player[],
   teamCount: number,
   playersPerTeam: number,
   preferences: PlayerPreferences = {},
-  randomizationLevel: number = 0,
 ): Team[] {
   if (
     !selectedPlayers ||
@@ -148,31 +153,24 @@ export function generateTeams(
     return [];
   }
 
-  // Normalizează randomizationLevel la 0-100
-  const normalizedRandomization = Math.max(
-    0,
-    Math.min(100, randomizationLevel),
-  );
-
   const totalPlayersNeeded = teamCount * playersPerTeam;
 
-  // --- 1. Validare și sortare inițială ---
+  // --- Step 1: Separate players by position ---
   const goalkeepers = selectedPlayers.filter((p) => p.position === "GK");
   const fieldPlayers = selectedPlayers.filter((p) => p.position === "FIELD");
 
   if (goalkeepers.length < teamCount) {
     console.warn(
-      `Avertisment: ${goalkeepers.length} portari, ${teamCount} echipe. Unele echipe nu vor avea portar.`,
+      `Warning: ${goalkeepers.length} goalkeepers, ${teamCount} teams. Some teams won't have a goalkeeper.`,
     );
   }
   if (selectedPlayers.length < totalPlayersNeeded) {
     console.warn(
-      `Deficit de jucători: ${selectedPlayers.length} selectați, ${totalPlayersNeeded} necesari.`,
+      `Player deficit: ${selectedPlayers.length} selected, ${totalPlayersNeeded} needed.`,
     );
-    // Nu oprim, dar vom umple cât putem
   }
 
-  // --- 2. Crearea Echipelor (goale) ---
+  // --- Step 2: Initialize empty teams ---
   const teams: Team[] = Array.from({ length: teamCount }, (_, i) => {
     let teamName: string;
     let teamColorClasses: string;
@@ -184,7 +182,7 @@ export function generateTeams(
       const fallbackIndex = i - priorityTeamsConfig.length;
       const baseColor =
         fallbackTeamBaseColors[fallbackIndex % fallbackTeamBaseColors.length];
-      teamName = `Echipa ${i + 1}`;
+      teamName = `Team ${i + 1}`;
       teamColorClasses = generateFallbackCardClasses(baseColor);
     }
     return {
@@ -196,174 +194,79 @@ export function generateTeams(
     };
   });
 
-  // --- 3. Pregătirea listei de distribuție randomizate ---
-  const sortedGoalkeepers = [...goalkeepers].sort((a, b) => b.grade - a.grade);
-
-  const playersByGrade = new Map<number, Player[]>();
-  for (const player of fieldPlayers) {
-    if (!playersByGrade.has(player.grade)) {
-      playersByGrade.set(player.grade, []);
-    }
-    playersByGrade.get(player.grade)!.push(player);
-  }
-
-  const sortedGrades = Array.from(playersByGrade.keys()).sort((a, b) => b - a);
-  let playersToDistribute: Player[] = [];
-
-  // Aplicăm randomizare bazată pe nivel
-  if (normalizedRandomization === 0) {
-    // 0%: Distribuție sistematică originală
-    for (const grade of sortedGrades) {
-      const players = playersByGrade.get(grade)!;
-      playersToDistribute.push(...shuffle(players));
-    }
-  } else if (normalizedRandomization === 100) {
-    // 100%: Shuffle complet
-    playersToDistribute = shuffle(fieldPlayers);
-  } else {
-    // Parțial (ex: 50%): Mix de sistematic și random
-    for (const grade of sortedGrades) {
-      const players = playersByGrade.get(grade)!;
-      const shuffledPlayers = shuffle([...players]);
-      const randomCount = Math.ceil(
-        (shuffledPlayers.length * normalizedRandomization) / 100,
-      );
-
-      // Ia randomCount jucători random din acest grad
-      const randomFromGrade = shuffledPlayers.slice(0, randomCount);
-      const systematicFromGrade = shuffledPlayers.slice(randomCount);
-
-      // Adaugă întâi random, apoi sistematic
-      playersToDistribute.push(...randomFromGrade);
-      playersToDistribute.push(...systematicFromGrade);
-    }
-
-    // Amestecă puțin pentru a sparge pattern-ul sistematic
-    const partialShuffle = Math.floor(
-      (playersToDistribute.length * normalizedRandomization) / 100,
-    );
-    for (let i = 0; i < partialShuffle; i++) {
-      const idx1 = Math.floor(Math.random() * playersToDistribute.length);
-      const idx2 = Math.floor(Math.random() * playersToDistribute.length);
-      [playersToDistribute[idx1], playersToDistribute[idx2]] = [
-        playersToDistribute[idx2],
-        playersToDistribute[idx1],
-      ];
-    }
-  }
-
-  // --- 4. Procesarea Preferințelor (folosind noul helper) ---
+  // --- Step 3: Build preference maps ---
   const { pairMap, separationMap } = buildPreferenceMaps(preferences);
   const placedPlayerIds = new Set<string>();
 
-  // --- 5. Distribuția Jucătorilor ---
-
-  // Pasul 5.1: Alocăm portarii
+  // --- Step 4: Distribute goalkeepers (one per team if possible) ---
+  const sortedGoalkeepers = shuffle([...goalkeepers]);
   for (let i = 0; i < sortedGoalkeepers.length && i < teamCount; i++) {
-    const gk = sortedGoalkeepers[i];
-    teams[i].players.push(gk);
-    teams[i].totalGrade += gk.grade;
-    placedPlayerIds.add(gk.id); // <-- MODIFICAT
+    teams[i].players.push(sortedGoalkeepers[i]);
+    teams[i].totalGrade += sortedGoalkeepers[i].grade;
+    placedPlayerIds.add(sortedGoalkeepers[i].id);
   }
 
-  // Filtrăm jucătorii rămași
-  let playersRemaining = playersToDistribute.filter(
-    (p) => !placedPlayerIds.has(p.id), // <-- MODIFICAT
-  );
+  // --- Step 5: Prepare field players for snake draft ---
+  let playerQueue = fieldPlayers.filter((p) => !placedPlayerIds.has(p.id));
 
-  let currentTeamIndex = Math.floor(Math.random() * teamCount);
-  let direction = Math.random() < 0.5 ? 1 : -1;
+  // Sort by grade (highest first) for fair distribution
+  playerQueue.sort((a, b) => b.grade - a.grade);
 
-  let totalPlacedPlayers = teams.reduce(
-    (sum, team) => sum + team.players.length,
-    0,
-  );
+  // --- Step 6: True Snake Draft Distribution ---
+  // Each round: all teams pick one player in snake order (alternating direction)
+  let direction = 1; // 1 = forward (0→N), -1 = backward (N→0)
 
-  // Pasul 5.2: Distribuim jucătorii de câmp
-  while (
-    playersRemaining.length > 0 &&
-    totalPlacedPlayers < totalPlayersNeeded
-  ) {
-    const player = playersRemaining.shift();
-    if (!player) break;
-    if (placedPlayerIds.has(player.id)) continue; // <-- MODIFICAT
+  while (playerQueue.length > 0) {
+    // Get team indices in current direction order
+    const teamIndices =
+      direction === 1
+        ? Array.from({ length: teamCount }, (_, i) => i)
+        : Array.from({ length: teamCount }, (_, i) => teamCount - 1 - i);
 
-    // Căutăm TOȚI partenerii (poate fi set gol, 1 sau mai mulți)
-    const partnerIds = pairMap.get(player.id) || new Set<string>();
+    // Each team picks one player this round (if it has space)
+    for (const teamIdx of teamIndices) {
+      if (playerQueue.length === 0) break;
 
-    // Căutăm toți partenerii în playersRemaining
-    const partnersInRemaining = playersRemaining.filter((p) =>
-      partnerIds.has(p.id),
-    );
+      const targetTeam = teams[teamIdx];
 
-    // Dacă jucătorul e într-o pereche și partenerii sunt în remaining,
-    // încerc să-i plasez pe toți
-    const playersToPlace = [player, ...partnersInRemaining];
+      // Skip if team is full
+      if (targetTeam.players.length >= playersPerTeam) continue;
 
-    let teamFound = false;
-    let attempts = 0;
-    const maxAttempts = teamCount * 3; // Măresc încercări
-
-    while (!teamFound && attempts < maxAttempts) {
-      const targetTeam = teams[currentTeamIndex];
-
-      if (
-        canPlaceInTeam(
-          playersToPlace,
-          targetTeam,
-          playersPerTeam,
-          separationMap,
-        )
-      ) {
-        // Plasarea
-        for (const p of playersToPlace) {
-          targetTeam.players.push(p);
-          targetTeam.totalGrade += p.grade;
-          placedPlayerIds.add(p.id); // <-- MODIFICAT
+      // Find a player that respects separation constraints
+      let placed = false;
+      for (let i = 0; i < playerQueue.length; i++) {
+        const player = playerQueue[i];
+        if (
+          canPlacePlayerInTeam(
+            player,
+            targetTeam,
+            playersPerTeam,
+            separationMap,
+          )
+        ) {
+          targetTeam.players.push(player);
+          targetTeam.totalGrade += player.grade;
+          placedPlayerIds.add(player.id);
+          playerQueue.splice(i, 1);
+          placed = true;
+          break;
         }
-        totalPlacedPlayers += playersToPlace.length;
-
-        // Scoatem din remaining toți partenerii care au fost plasat
-        playersRemaining = playersRemaining.filter(
-          (p) => !partnersInRemaining.some((partner) => partner.id === p.id),
-        );
-
-        teamFound = true;
-      } else {
-        // Avansăm la următoarea echipă (snake draft)
-        currentTeamIndex += direction;
-        if (currentTeamIndex >= teamCount) {
-          currentTeamIndex = teamCount - 1;
-          direction = -1;
-        } else if (currentTeamIndex < 0) {
-          currentTeamIndex = 0;
-          direction = 1;
-        }
-        attempts++;
       }
-    } // end while(!teamFound)
 
-    if (!teamFound) {
-      console.warn(
-        `Jucătorul ${player.full_name} (și partenerii, dacă există) nu a putut fi alocat conform regulilor.`,
-      );
-      // Dacă e în pereche și nu găsim loc, punem înapoi pe toți
-      if (partnersInRemaining.length > 0) {
-        playersRemaining.push(player);
-        playersRemaining.push(...partnersInRemaining);
-      } else {
-        // Dacă e singur și nu găsim loc, punem înapoi
-        playersRemaining.push(player);
+      // If we couldn't respect separation constraints, just take the first player
+      if (!placed && playerQueue.length > 0) {
+        const player = playerQueue.shift()!;
+        targetTeam.players.push(player);
+        targetTeam.totalGrade += player.grade;
+        placedPlayerIds.add(player.id);
       }
     }
 
-    // Actualizăm lista 'remaining'
-    playersRemaining = playersRemaining.filter(
-      (p) => !placedPlayerIds.has(p.id), // <-- MODIFICAT
-    );
+    // Reverse direction for next round (snake effect)
+    direction = direction === 1 ? -1 : 1;
   }
 
-  // --- 6. Calcul Final ---
+  // --- Step 7: Calculate final stats ---
   teams.forEach((team) => {
     team.totalGrade = team.players.reduce(
       (sum, player) => sum + player.grade,
@@ -380,152 +283,13 @@ export function generateTeams(
 }
 
 // ========================================================================
-// START: Codul Lipsă (Post-Procesare)
+// Export (no additional post-processing needed with snake draft)
 // ========================================================================
 
 /**
- * Verifică dacă un schimb de jucători este "sigur" conform preferințelor.
- * (Folosește player.id)
+ * No longer needed - snake draft provides fair distribution by default.
+ * Keeping for backwards compatibility, but it just returns teams as-is.
  */
-const canSwapPlayers = (
-  playerA: Player,
-  teamA: Team,
-  playerB: Player,
-  teamB: Team,
-  { pairMap, separationMap }: PreferenceMaps,
-): boolean => {
-  // 1. Nu spargem o pereche - Nu schimbăm jucători care sunt parte dintr-o pereche
-  if (pairMap.has(playerA.id) || pairMap.has(playerB.id)) {
-    return false;
-  }
-
-  // 2. Nu schimbăm poziții (GK cu FIELD)
-  if (playerA.position !== playerB.position) {
-    return false;
-  }
-
-  // 3. Verificăm separările pentru playerA (care merge în teamB)
-  const teamB_Ids = new Set(teamB.players.map((p) => p.id));
-  teamB_Ids.delete(playerB.id); // Îl scoatem pe cel care pleacă
-  const separationsA = separationMap.get(playerA.id);
-  if (separationsA) {
-    for (const forbiddenId of separationsA) {
-      if (teamB_Ids.has(forbiddenId)) return false; // Conflict!
-    }
-  }
-
-  // 4. Verificăm separările pentru playerB (care merge în teamA)
-  const teamA_Ids = new Set(teamA.players.map((p) => p.id));
-  teamA_Ids.delete(playerA.id); // Îl scoatem pe cel care pleacă
-  const separationsB = separationMap.get(playerB.id);
-  if (separationsB) {
-    for (const forbiddenId of separationsB) {
-      if (teamA_Ids.has(forbiddenId)) return false; // Conflict!
-    }
-  }
-
-  return true; // Schimbul e sigur
-};
-
-/**
- * Încearcă să echilibreze echipele făcând schimburi de jucători.
- */
-export function balanceTeamsPostProcess(
-  teams: Team[],
-  preferences: PlayerPreferences,
-  maxIterations: number = 20,
-  tolerance: number = 1,
-): Team[] {
-  // Dacă nu avem ce echilibra, returnăm
-  if (teams.length < 2) return teams;
-
-  const { pairMap, separationMap } = buildPreferenceMaps(preferences);
-  const prefMaps = { pairMap, separationMap };
-
-  for (let iter = 0; iter < maxIterations; iter++) {
-    // 1. Găsește echipa cea mai slabă și cea mai puternică
-    // Sortăm echipele după nota totală, de la cea mai slabă la cea mai puternică
-    teams.sort((a, b) => a.totalGrade - b.totalGrade);
-
-    const weakestTeam = teams[0];
-    const strongestTeam = teams[teams.length - 1];
-
-    const currentDiff = strongestTeam.totalGrade - weakestTeam.totalGrade;
-
-    // 2. Verifică dacă suntem suficient de echilibrați
-    if (currentDiff <= tolerance) {
-      break; // Gata. Echipele sunt echilibrate.
-    }
-
-    let bestSwap: { pStrong: Player; pWeak: Player; newDiff: number } | null =
-      null;
-
-    // 3. Caută cel mai bun schimb posibil
-    for (const pStrong of strongestTeam.players) {
-      for (const pWeak of weakestTeam.players) {
-        // Verificăm dacă pStrong e mai bun ca pWeak (schimbul are sens)
-        if (pStrong.grade <= pWeak.grade) {
-          continue;
-        }
-
-        // 3.1 Verifică dacă schimbul e permis
-        if (
-          !canSwapPlayers(pStrong, strongestTeam, pWeak, weakestTeam, prefMaps)
-        ) {
-          continue;
-        }
-
-        // 3.2 Calculează noul scor
-        const newStrongGrade =
-          strongestTeam.totalGrade - pStrong.grade + pWeak.grade;
-        const newWeakGrade =
-          weakestTeam.totalGrade - pWeak.grade + pStrong.grade;
-        const newDiff = Math.abs(newStrongGrade - newWeakGrade);
-
-        // 3.3 Verifică dacă acest schimb îmbunătățește situația
-        if (newDiff < currentDiff) {
-          if (!bestSwap || newDiff < bestSwap.newDiff) {
-            bestSwap = { pStrong, pWeak, newDiff };
-          }
-        }
-      }
-    }
-
-    // 4. Execută cel mai bun schimb găsit
-    if (bestSwap) {
-      const { pStrong, pWeak } = bestSwap;
-
-      // Scoate jucătorii
-      strongestTeam.players = strongestTeam.players.filter(
-        (p) => p.id !== pStrong.id,
-      );
-      weakestTeam.players = weakestTeam.players.filter(
-        (p) => p.id !== pWeak.id,
-      );
-
-      // Adaugă jucătorii
-      strongestTeam.players.push(pWeak);
-      weakestTeam.players.push(pStrong);
-
-      // Recalculează notele
-      strongestTeam.totalGrade =
-        strongestTeam.totalGrade - pStrong.grade + pWeak.grade;
-      weakestTeam.totalGrade =
-        weakestTeam.totalGrade - pWeak.grade + pStrong.grade;
-    } else {
-      // Nu s-a găsit niciun schimb util. Oprește-te.
-      break;
-    }
-  } // end for iterations
-
-  // Recalculăm media la final
-  teams.forEach((team) => {
-    team.averageGrade =
-      team.players.length > 0 ? team.totalGrade / team.players.length : 0;
-  });
-
+export function balanceTeamsPostProcess(teams: Team[]): Team[] {
   return teams;
 }
-// ========================================================================
-// END: Codul Lipsă
-// ========================================================================

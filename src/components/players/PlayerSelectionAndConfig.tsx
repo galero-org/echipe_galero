@@ -1,9 +1,6 @@
 import React, { useState } from "react";
-// --- START: Importuri actualizate ---
 import type { Player, PlayerPreferences } from "../../lib/types";
-// --- END: Importuri actualizate ---
 
-// --- START: Props actualizate ---
 interface Props {
   allPlayers: Player[];
   selectedPlayers: Player[];
@@ -14,18 +11,9 @@ interface Props {
   setPlayersPerTeam: React.Dispatch<React.SetStateAction<number>>;
   onGenerate: () => void;
   edition_id: string;
-
-  // Noile props pentru preferințe și echilibrare
   preferences: PlayerPreferences;
   setPreferences: React.Dispatch<React.SetStateAction<PlayerPreferences>>;
-  balanceTolerance: number;
-  setBalanceTolerance: React.Dispatch<React.SetStateAction<number>>;
-  balanceIterations: number;
-  setBalanceIterations: React.Dispatch<React.SetStateAction<number>>;
-  randomizationLevel: number;
-  setRandomizationLevel: React.Dispatch<React.SetStateAction<number>>;
 }
-// --- END: Props actualizate ---
 
 const PlayerSelectionAndConfig: React.FC<Props> = ({
   allPlayers,
@@ -37,24 +25,13 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
   setPlayersPerTeam,
   onGenerate,
   edition_id,
-  // --- START: Destructurare props noi ---
   preferences,
   setPreferences,
-  balanceTolerance,
-  setBalanceTolerance,
-  balanceIterations,
-  setBalanceIterations,
-  randomizationLevel,
-  setRandomizationLevel,
-  // --- END: Destructurare props noi ---
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
-
-  // --- START: Stare locală pentru UI-ul de preferințe ---
-  const [p1, setP1] = useState<string>(""); // ID-ul jucătorului 1 selectat
-  const [p2, setP2] = useState<string>(""); // ID-ul jucătorului 2 selectat
-  const [p3, setP3] = useState<string>(""); // ID-ul jucătorului 3 selectat
-  // --- END: Stare locală ---
+  const [p1, setP1] = useState<string>("");
+  const [p2, setP2] = useState<string>("");
+  const [p3, setP3] = useState<string>("");
 
   const handlePlayerToggle = (player: Player) => {
     setSelectedPlayers((prevSelected) =>
@@ -72,7 +49,6 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
   const canGenerate =
     selectedPlayers.length >= totalPlayersNeeded && totalPlayersNeeded > 0;
 
-  // --- START: Handleri pentru preferințe ---
   const getPlayerName = (id: string): string => {
     return selectedPlayers.find((p) => p.id === id)?.full_name || "N/A";
   };
@@ -86,12 +62,11 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
   const handleAddPair = () => {
     if (!p1 || !p2 || p1 === p2) return;
 
-    // Dacă e selectat și p3, adaugă 3 perechi pentru a forța toți 3 în aceeași echipă
     if (p3 && p3 !== p1 && p3 !== p2) {
       const pairs: [string, string][] = [
         [p1, p2],
         [p2, p3],
-        [p1, p3], // Triunghi de preferințe care forțează toți 3 împreună
+        [p1, p3],
       ];
       setPreferences((prev) => ({
         ...prev,
@@ -101,7 +76,6 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
       return;
     }
 
-    // Altfel, adaugă doar perechea p1-p2
     const newPair: [string, string] = [p1, p2];
     setPreferences((prev) => ({
       ...prev,
@@ -135,15 +109,14 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
       ),
     }));
   };
-  // --- END: Handleri pentru preferințe ---
 
   return (
     <div className="mb-8 p-6 bg-gray-50 rounded-lg shadow">
       <h2 className="text-2xl font-semibold mb-6 text-center text-gray-700">
-        1. Configurează Echipele
+        Configurează Echipele
       </h2>
 
-      {/* Setări Număr Echipe și Jucători/Echipă */}
+      {/* Team configuration */}
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         <div>
           <label
@@ -188,13 +161,12 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
         <strong>{totalPlayersNeeded}</strong> necesari.
       </p>
 
-      {/* --- START: Secțiune nouă pentru Preferințe și Parametri --- */}
+      {/* Preferences section */}
       <div className="mb-6 p-4 bg-white rounded-md shadow-sm border border-gray-200">
-        <h3 className="text-xl font-semibold mb-4 text-gray-700">
-          2. Preferințe și Parametri
+        <h3 className="text-lg font-semibold mb-4 text-gray-700">
+          Preferințe (opțional)
         </h3>
 
-        {/* Sub-secțiune Adăugare Preferințe */}
         <div className="grid md:grid-cols-3 gap-4 items-end mb-4">
           <div>
             <label
@@ -230,11 +202,11 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
               value={p2}
               onChange={(e) => setP2(e.target.value)}
               className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              disabled={!p1} // Activ doar dacă P1 e selectat
+              disabled={!p1}
             >
               <option value="">Alege jucător...</option>
               {selectedPlayers
-                .filter((p) => p.id !== p1) // Nu poți fi pereche cu tine însuți
+                .filter((p) => p.id !== p1)
                 .map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.full_name}
@@ -254,11 +226,11 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
               value={p3}
               onChange={(e) => setP3(e.target.value)}
               className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              disabled={!p2} // Activ doar dacă P2 e selectat
+              disabled={!p2}
             >
               <option value="">Niciun 3-lea...</option>
               {selectedPlayers
-                .filter((p) => p.id !== p1 && p.id !== p2) // Nu selecta p1 sau p2
+                .filter((p) => p.id !== p1 && p.id !== p2)
                 .map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.full_name}
@@ -273,22 +245,21 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
             disabled={!p1 || !p2}
             className="flex-1 py-2 px-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
           >
-            {p3 ? `Vreau toți 3 împreună (++)` : `Vreau împreună (+)`}
+            {p3 ? `Vreau toți 3 împreună` : `Vreau împreună`}
           </button>
           <button
             onClick={handleAddSeparation}
             disabled={!p1 || !p2}
             className="flex-1 py-2 px-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-gray-400"
           >
-            Vreau separat (-)
+            Vreau separat
           </button>
         </div>
 
-        {/* Sub-secțiune Afișare Preferințe */}
         {(preferences.pairs?.length || 0) > 0 ||
         (preferences.separations?.length || 0) > 0 ? (
           <div>
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <h4 className="font-medium text-gray-600">Perechi dorite:</h4>
                 <ul className="list-disc list-inside text-sm">
@@ -322,90 +293,14 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
                 </ul>
               </div>
             </div>
-
-            {/* Avertisment dacă separări sunt prea multe */}
-            {(preferences.separations?.length || 0) > 0 &&
-              playersPerTeam <= 4 && (
-                <div className="p-3 bg-yellow-50 border border-yellow-300 rounded-md mb-4">
-                  <p className="text-sm text-yellow-800">
-                    ⚠️ <strong>Atenție:</strong> Cu {playersPerTeam}{" "}
-                    jucători/echipă și {preferences.separations?.length}{" "}
-                    separări, poate fi dificil să respecte toate constrângerile.
-                    Încercă să mărești jucătorii/echipă sau să scazi separările.
-                  </p>
-                </div>
-              )}
           </div>
         ) : null}
-
-        {/* Sub-secțiune Parametri Echilibrare */}
-        <div className="grid md:grid-cols-3 gap-4 border-t pt-4">
-          <div>
-            <label
-              htmlFor="balance-tolerance"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Toleranță (dif. note)
-            </label>
-            <input
-              type="number"
-              id="balance-tolerance"
-              min="0"
-              value={balanceTolerance}
-              onChange={(e) => setBalanceTolerance(Number(e.target.value))}
-              className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="balance-iterations"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Iterații Echilibrare
-            </label>
-            <input
-              type="number"
-              id="balance-iterations"
-              min="1"
-              max="100"
-              value={balanceIterations}
-              onChange={(e) => setBalanceIterations(Number(e.target.value))}
-              className="mt-1 w-full p-2 border border-gray-300 rounded-md shadow-sm"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="randomization-level"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Randomizare: <strong>{randomizationLevel}%</strong>
-            </label>
-            <input
-              type="range"
-              id="randomization-level"
-              min="0"
-              max="100"
-              step="10"
-              value={randomizationLevel}
-              onChange={(e) => setRandomizationLevel(Number(e.target.value))}
-              className="mt-1 w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-blue-600"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              {randomizationLevel === 0
-                ? "Sistematic (asemănătoare)"
-                : randomizationLevel === 100
-                  ? "Complet random (diferite)"
-                  : "Mix (recomandat)"}
-            </p>
-          </div>
-        </div>
       </div>
-      {/* --- END: Secțiune nouă --- */}
 
-      {/* Selecție Jucători */}
+      {/* Player selection */}
       <div className="mb-6">
-        <h3 className="text-xl font-semibold mb-4 text-gray-700">
-          3. Selectează Jucătorii
+        <h3 className="text-lg font-semibold mb-4 text-gray-700">
+          Selectează Jucătorii
         </h3>
         <label
           htmlFor="search-player"
@@ -451,7 +346,7 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
         </p>
       </div>
 
-      {/* Buton Generare */}
+      {/* Generate button */}
       <button
         onClick={onGenerate}
         disabled={!canGenerate}
@@ -464,7 +359,7 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
                   focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors`}
       >
         {canGenerate
-          ? "🎲 Generează Echipe"
+          ? "🎲 Generează Echipe (Snake Draft)"
           : `Selectează ${
               totalPlayersNeeded - selectedPlayers.length
             } jucători`}
@@ -485,5 +380,4 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
     </div>
   );
 };
-
 export default PlayerSelectionAndConfig;
