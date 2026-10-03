@@ -19,6 +19,11 @@ jobs:
   verify:
     name: Build and Smoke Tests
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ github.event_name == 'pull_request' && 'https://ci-placeholder.supabase.co' || secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ github.event_name == 'pull_request' && 'ci-placeholder-anon-key' || secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ github.event_name == 'pull_request' && 'ci-placeholder-service-role-key' || secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      PUBLIC_SUPABASE_REDIRECT: ${{ github.event_name == 'pull_request' && 'http://127.0.0.1:4321/api/auth/callback' || secrets.PUBLIC_SUPABASE_REDIRECT }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
