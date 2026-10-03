@@ -8,7 +8,6 @@ import { generateTeams } from "../lib/teamService";
 interface Props {
   allPlayers: Player[];
   registeredPlayerIds: string[];
-  edition_id: string;
   numarEditie?: number;
 }
 
@@ -20,7 +19,6 @@ const EMPTY_PREFERENCES: PlayerPreferences = { pairs: [], separations: [] };
 const TeamOrchestrator: React.FC<Props> = ({
   allPlayers,
   registeredPlayerIds,
-  edition_id,
   numarEditie = 0,
 }) => {
   const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
@@ -80,9 +78,7 @@ const TeamOrchestrator: React.FC<Props> = ({
           <GeneratedTeamsDisplay
             teams={generatedTeams}
             teamCount={teamCount}
-            edition_id={edition_id}
             numarEditie={numarEditie}
-            playersPerTeam={playersPerTeam}
           />
         </Suspense>
       )}
