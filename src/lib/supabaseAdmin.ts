@@ -1,5 +1,11 @@
 // src/lib/supabaseAdmin.ts
-import { createClient } from "@supabase/supabase-js";
+import {
+  createClient,
+  type WebSocketLikeConstructor,
+} from "@supabase/supabase-js";
+
+const realtimeTransport = (await import("ws"))
+  .default as unknown as WebSocketLikeConstructor;
 
 const supabaseUrl = import.meta.env.SUPABASE_URL;
 const supabaseServiceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -14,5 +20,8 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false,
+  },
+  realtime: {
+    transport: realtimeTransport,
   },
 });

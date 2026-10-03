@@ -36,6 +36,11 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Set up Deno 2 for Netlify dev
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
@@ -44,11 +49,3 @@ jobs:
 
       - name: Run smoke tests
         run: npm run test:smoke
-
-      # This site is not connected to Git in Netlify, so deploy here after checks pass.
-      - name: Deploy to Netlify production
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        run: npx --yes netlify-cli deploy --prod --no-build --site "$NETLIFY_SITE_ID"
