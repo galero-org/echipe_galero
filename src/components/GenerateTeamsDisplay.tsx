@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import type { Team } from "../lib/types";
 import { motion, AnimatePresence } from "framer-motion";
 import html2canvas from "html2canvas";
@@ -15,9 +15,6 @@ interface Props {
 type TeamPlayer = Team["players"][number];
 
 // --- Constante ---------------------------------------------------------------
-
-/** Clasă CSS folosită pentru a ascunde notele la exportul imaginii (vezi useExportTeamsAsImage). */
-const GRADE_DISPLAY_CLASS = "grade-display";
 
 /** ID-ul elementului DOM capturat la exportul imaginii. */
 const CAPTURE_ELEMENT_ID = "teams-capture";
@@ -40,20 +37,11 @@ function getTeamTextColorClass(team: Team): string {
   return team.color ? team.color.split(" ")[2] : "text-gray-800";
 }
 
-/** Procent din suma mediilor tuturor echipelor — folosit doar ca indicator orientativ, nu o probabilitate reală. */
-function formatWinChance(teamAverage: number, totalAverage: number): string {
-  return totalAverage ? ((teamAverage / totalAverage) * 100).toFixed(1) : "0";
-}
-
 function getGridColsClass(teamCount: number): string {
   if (teamCount <= 1) return "lg:grid-cols-1";
   if (teamCount === 2) return "lg:grid-cols-2";
   if (teamCount === 3) return "lg:grid-cols-3";
   return "lg:grid-cols-4";
-}
-
-function getPlayerGrade(player: TeamPlayer): number {
-  return player.grade || 0;
 }
 
 // --- Hooks (logică cu efecte secundare, separată de randare) ------------------
@@ -97,125 +85,72 @@ function useSaveTeamGeneration(params: {
   return { isSaving, saveGeneration };
 }
 
-/** Exportă elementul cu id-ul dat ca imagine PNG, ascunzând temporar notele (dacă sunt vizibile). */
-function useExportTeamsAsImage(numarEditie: number) {
-  const exportAsImage = async () => {
-    const element = document.getElementById(CAPTURE_ELEMENT_ID);
-    if (!element) return;
+/** Creează imaginea PNG folosită atât la descărcare, cât și la partajare. */
+async function createTeamsImage(numarEditie: number): Promise<File | null> {
+  const element = document.getElementById(CAPTURE_ELEMENT_ID);
+  if (!element) return null;
 
-    const gradeElements = element.querySelectorAll<HTMLElement>(
-      `.${GRADE_DISPLAY_CLASS}`,
-    );
-    gradeElements.forEach((el) => (el.style.display = "none"));
+  const canvas = await html2canvas(element, {
+    backgroundColor: "#ffffff",
+    scale: 2,
+    useCORS: true,
+    logging: false,
+  });
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, "image/png"),
+  );
+  if (!blob) throw new Error("Imaginea nu a putut fi creată.");
 
-    try {
-      const canvas = await html2canvas(element, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
+  const date = new Date().toISOString().slice(0, 10);
+  return new File([blob], `echipe-ed${numarEditie}-${date}.png`, {
+    type: "image/png",
+  });
+}
 
-      const link = document.createElement("a");
-      link.href = canvas.toDataURL("image/png");
-      link.download = `echipe-ed${numarEditie}-${new Date().toISOString().slice(0, 10)}.png`;
-      link.click();
-    } catch (err) {
-      console.error("Error exporting teams image:", err);
-      alert("❌ Eroare la exportarea imaginii");
-    } finally {
-      // Garantăm refacerea vizibilității notelor chiar dacă exportul eșuează.
-      gradeElements.forEach((el) => (el.style.display = ""));
-    }
-  };
-
-  return exportAsImage;
+function downloadImage(file: File) {
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = file.name;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // --- Subcomponente -------------------------------------------------------------
 
 const Toolbar: React.FC<{
   isSaving: boolean;
-  showGrades: boolean;
   onExport: () => void;
+  onShare: () => void;
   onSave: () => void;
-  onToggleGrades: () => void;
-}> = ({ isSaving, showGrades, onExport, onSave, onToggleGrades }) => (
-  <div className="flex gap-3 mb-6 flex-wrap">
+}> = ({ isSaving, onExport, onShare, onSave }) => (
+  <div className="mb-6 flex flex-wrap gap-2">
+    <button
+      type="button"
+      onClick={onShare}
+      className="rounded-md bg-green-700 px-4 py-2 font-medium text-white transition hover:bg-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700"
+    >
+      Trimite pe WhatsApp
+    </button>
     <button
       type="button"
       onClick={onExport}
-      className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+      className="rounded-md border border-gray-300 bg-white px-4 py-2 font-medium text-gray-800 transition hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
     >
-      📥 Exportă imaginea
+      Descarcă PNG
     </button>
     <button
       type="button"
       onClick={onSave}
       disabled={isSaving}
-      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition"
+      className="rounded-md border border-gray-300 bg-white px-4 py-2 font-medium text-gray-800 transition hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 disabled:cursor-wait disabled:opacity-50"
     >
-      {isSaving ? "Se salvează..." : "💾 Salvează generarea"}
-    </button>
-    <button
-      type="button"
-      onClick={onToggleGrades}
-      className={`px-4 py-2 rounded-md transition ${
-        showGrades
-          ? "bg-yellow-600 text-white hover:bg-yellow-700"
-          : "bg-gray-600 text-white hover:bg-gray-700"
-      }`}
-    >
-      {showGrades ? "👁️ Ascunde notele" : "👁️ Arată notele"}
+      {isSaving ? "Se salvează..." : "Salvează generarea"}
     </button>
   </div>
 );
 
-const TopPlayersPanel: React.FC<{
-  players: TeamPlayer[];
-  showGrades: boolean;
-}> = ({ players, showGrades }) => (
-  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-    <div className="lg:col-span-1 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg shadow-md p-4 border-l-4 border-yellow-500">
-      <h3 className="font-bold text-lg text-yellow-900 mb-3">
-        🌟 Top Jucători
-      </h3>
-      <div className="space-y-2 max-h-96 overflow-y-auto">
-        {players.slice(0, 24).map((player, idx) => (
-          <div
-            key={player.id}
-            className="flex justify-between items-center p-2 bg-white rounded-md shadow-sm border-l-2 border-yellow-400 hover:shadow-md transition"
-          >
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-gray-800 truncate">
-                #{idx + 1} {player.full_name}
-              </p>
-              {player.position === "GK" && (
-                <span className="text-xs text-purple-600 font-bold">
-                  🧤 Portar
-                </span>
-              )}
-            </div>
-            <div className="text-right ml-2">
-              {showGrades && (
-                <span
-                  className={`font-bold text-yellow-700 text-lg ${GRADE_DISPLAY_CLASS}`}
-                >
-                  {getPlayerGrade(player)}
-                </span>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  </div>
-);
-
-const PlayerRow: React.FC<{ player: TeamPlayer; showGrades: boolean }> = ({
-  player,
-  showGrades,
-}) => (
+const PlayerRow: React.FC<{ player: TeamPlayer }> = ({ player }) => (
   <li className="text-sm p-2 bg-white/70 rounded-md shadow-sm flex justify-between items-center hover:bg-white/90 transition">
     <div className="flex-1">
       <span className="font-medium">{player.full_name}</span>
@@ -236,24 +171,13 @@ const PlayerRow: React.FC<{ player: TeamPlayer; showGrades: boolean }> = ({
         <span className="text-xs ml-1 font-bold text-purple-600">🧤 GK</span>
       )}
     </div>
-    <div className="text-right ml-2">
-      {showGrades && (
-        <span
-          className={`font-bold text-blue-700 text-base ${GRADE_DISPLAY_CLASS}`}
-        >
-          {getPlayerGrade(player)}
-        </span>
-      )}
-    </div>
   </li>
 );
 
 const TeamCard: React.FC<{
   team: Team;
   idx: number;
-  totalAvg: number;
-  showGrades: boolean;
-}> = ({ team, idx, totalAvg, showGrades }) => {
+}> = ({ team, idx }) => {
   const textColorClass = getTeamTextColorClass(team);
 
   return (
@@ -281,23 +205,10 @@ const TeamCard: React.FC<{
         </span>
       </div>
 
-      <p className="mb-1 text-sm">
-        Media echipei:{" "}
-        <span className={`font-bold text-lg ${textColorClass}`}>
-          {team.averageGrade?.toFixed(2)}
-        </span>
-      </p>
-      <p className="mb-3 text-sm">
-        Șanse de câștig:{" "}
-        <span className="font-semibold text-green-700">
-          {formatWinChance(team.averageGrade || 0, totalAvg)}%
-        </span>
-      </p>
-
       <h4 className="text-sm font-medium mb-2">Jucători:</h4>
       <ul className="space-y-1">
         {team.players.map((player) => (
-          <PlayerRow key={player.id} player={player} showGrades={showGrades} />
+          <PlayerRow key={player.id} player={player} />
         ))}
       </ul>
     </motion.div>
@@ -313,30 +224,46 @@ const GeneratedTeamsDisplay: React.FC<Props> = ({
   numarEditie = 0,
   playersPerTeam = 6,
 }) => {
-  const [showGrades, setShowGrades] = useState(true);
-
   const { isSaving, saveGeneration } = useSaveTeamGeneration({
     editionId: edition_id,
     teamCount,
     playersPerTeam,
     teams,
   });
-  const exportAsImage = useExportTeamsAsImage(numarEditie);
+  const gridColsClass = getGridColsClass(teamCount);
 
-  const allPlayersInTeams = useMemo(
-    () =>
-      teams
-        .flatMap((team) => team.players)
-        .sort((a, b) => getPlayerGrade(b) - getPlayerGrade(a)),
-    [teams],
-  );
+  const handleExport = async () => {
+    try {
+      const image = await createTeamsImage(numarEditie);
+      if (image) downloadImage(image);
+    } catch (err) {
+      console.error("Error exporting teams image:", err);
+      alert("Eroare la exportarea imaginii.");
+    }
+  };
 
-  const totalAvg = useMemo(
-    () => teams.reduce((acc, t) => acc + (t.averageGrade || 0), 0),
-    [teams],
-  );
+  const handleShare = async () => {
+    try {
+      const image = await createTeamsImage(numarEditie);
+      if (!image) return;
 
-  const gridColsClass = useMemo(() => getGridColsClass(teamCount), [teamCount]);
+      if (navigator.canShare?.({ files: [image] }) && navigator.share) {
+        await navigator.share({
+          files: [image],
+          title: `Echipe Galero - ediția #${numarEditie}`,
+          text: `Echipele pentru ediția #${numarEditie}`,
+        });
+        return;
+      }
+
+      downloadImage(image);
+      alert("Imaginea a fost descărcată. Atașeaz-o în grupul WhatsApp.");
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      console.error("Error sharing teams image:", err);
+      alert("Eroare la pregătirea imaginii pentru WhatsApp.");
+    }
+  };
 
   if (!teams || teams.length === 0) return null;
 
@@ -348,13 +275,10 @@ const GeneratedTeamsDisplay: React.FC<Props> = ({
 
       <Toolbar
         isSaving={isSaving}
-        showGrades={showGrades}
-        onExport={exportAsImage}
+        onExport={handleExport}
+        onShare={handleShare}
         onSave={saveGeneration}
-        onToggleGrades={() => setShowGrades((v) => !v)}
       />
-
-      <TopPlayersPanel players={allPlayersInTeams} showGrades={showGrades} />
 
       <div
         id={CAPTURE_ELEMENT_ID}
@@ -390,8 +314,6 @@ const GeneratedTeamsDisplay: React.FC<Props> = ({
                 key={team.name + "-" + idx}
                 team={team}
                 idx={idx}
-                totalAvg={totalAvg}
-                showGrades={showGrades}
               />
             ))}
           </motion.div>
