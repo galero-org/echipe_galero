@@ -161,6 +161,21 @@ const TeamCard: React.FC<{
         </span>
       </div>
 
+      <dl className="mb-3 grid grid-cols-2 gap-2 text-sm">
+        <div className="rounded-md bg-gray-50 px-3 py-2">
+          <dt className="text-xs text-gray-500">AVG notă</dt>
+          <dd className={`font-semibold ${textColorClass}`}>
+            {(team.averageGrade ?? 0).toFixed(2)}
+          </dd>
+        </div>
+        <div className="rounded-md bg-gray-50 px-3 py-2">
+          <dt className="text-xs text-gray-500">AVG prezențe</dt>
+          <dd className="font-semibold text-gray-800">
+            {(team.averageEditionsPlayed ?? 0).toFixed(1)}
+          </dd>
+        </div>
+      </dl>
+
       <h4 className="text-sm font-medium mb-2">Jucători:</h4>
       <ul className="space-y-1">
         {team.players.map((player) => (
