@@ -6,9 +6,7 @@ import html2canvas from "html2canvas";
 interface Props {
   teams: Team[];
   teamCount: number;
-  edition_id: string;
   numarEditie?: number;
-  playersPerTeam?: number;
 }
 
 /** Un jucător așa cum apare în interiorul unei echipe generate. */
@@ -44,48 +42,7 @@ function getGridColsClass(teamCount: number): string {
   return "lg:grid-cols-4";
 }
 
-// --- Hooks (logică cu efecte secundare, separată de randare) ------------------
-
-/** Gestionează salvarea generării curente de echipe prin POST către API. */
-function useSaveTeamGeneration(params: {
-  editionId: string;
-  teamCount: number;
-  playersPerTeam: number;
-  teams: Team[];
-}) {
-  const [isSaving, setIsSaving] = useState(false);
-
-  const saveGeneration = async () => {
-    setIsSaving(true);
-    try {
-      const response = await fetch("/api/team-generations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          edition_id: params.editionId,
-          team_count: params.teamCount,
-          players_per_team: params.playersPerTeam,
-          generated_teams: params.teams,
-        }),
-      });
-
-      if (response.ok) {
-        alert("✅ Generare salvată!");
-      } else {
-        alert("❌ Eroare la salvare");
-      }
-    } catch (err) {
-      console.error("Error saving team generation:", err);
-      alert("❌ Eroare la salvare");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return { isSaving, saveGeneration };
-}
-
-/** Creează imaginea PNG folosită atât la descărcare, cât și la partajare. */
+/** Creează o imagine landscape, luminoasă, independentă de tema și viewport-ul paginii. */
 async function createTeamsImage(numarEditie: number): Promise<File | null> {
   const element = document.getElementById(CAPTURE_ELEMENT_ID);
   if (!element) return null;
@@ -95,6 +52,25 @@ async function createTeamsImage(numarEditie: number): Promise<File | null> {
     scale: 2,
     useCORS: true,
     logging: false,
+    windowWidth: 1440,
+    onclone: (clonedDocument) => {
+      clonedDocument.documentElement.classList.remove("dark");
+      clonedDocument.body.classList.remove("dark");
+      clonedDocument.body.style.backgroundColor = "#ffffff";
+
+      const clonedElement = clonedDocument.getElementById(CAPTURE_ELEMENT_ID);
+      if (!clonedElement) return;
+
+      clonedElement.style.width = "1280px";
+      clonedElement.style.maxWidth = "none";
+      clonedElement.style.minHeight = "0";
+      clonedElement.style.padding = "32px";
+      clonedElement.style.overflow = "visible";
+      clonedElement.style.borderRadius = "0";
+      clonedElement.style.backgroundColor = "#ffffff";
+      clonedElement.style.color = "#1f2937";
+      clonedElement.style.boxShadow = "none";
+    },
   });
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, "image/png"),
@@ -118,53 +94,33 @@ function downloadImage(file: File) {
 
 // --- Subcomponente -------------------------------------------------------------
 
-const Toolbar: React.FC<{
-  isSaving: boolean;
-  onExport: () => void;
-  onShare: () => void;
-  onSave: () => void;
-}> = ({ isSaving, onExport, onShare, onSave }) => (
+const Toolbar: React.FC<{ isSharing: boolean; onShare: () => void }> = ({
+  isSharing,
+  onShare,
+}) => (
   <div className="mb-6 flex flex-wrap gap-2">
     <button
       type="button"
       onClick={onShare}
+      disabled={isSharing}
       className="rounded-md bg-green-700 px-4 py-2 font-medium text-white transition hover:bg-green-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-700"
     >
-      Trimite pe WhatsApp
-    </button>
-    <button
-      type="button"
-      onClick={onExport}
-      className="rounded-md border border-gray-300 bg-white px-4 py-2 font-medium text-gray-800 transition hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500"
-    >
-      Descarcă PNG
-    </button>
-    <button
-      type="button"
-      onClick={onSave}
-      disabled={isSaving}
-      className="rounded-md border border-gray-300 bg-white px-4 py-2 font-medium text-gray-800 transition hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-500 disabled:cursor-wait disabled:opacity-50"
-    >
-      {isSaving ? "Se salvează..." : "Salvează generarea"}
+      {isSharing ? "Se pregătește imaginea..." : "Trimite pe WhatsApp"}
     </button>
   </div>
 );
+
+function formatPresenceCount(count: number): string {
+  return count === 1 ? "(1 prezență)" : `(${count} prezențe)`;
+}
 
 const PlayerRow: React.FC<{ player: TeamPlayer }> = ({ player }) => (
   <li className="text-sm p-2 bg-white/70 rounded-md shadow-sm flex justify-between items-center hover:bg-white/90 transition">
     <div className="flex-1">
       <span className="font-medium">{player.full_name}</span>
       {player.totalEditions !== undefined && (
-        <span
-          className={`text-xs ml-1 ${
-            player.totalEditions === 1
-              ? "text-red-400 font-semibold"
-              : "text-gray-500"
-          }`}
-        >
-          {player.totalEditions === 1
-            ? "(Nou)"
-            : `(${player.totalEditions} prez.)`}
+        <span className="ml-1 text-xs text-gray-500">
+          {formatPresenceCount(player.totalEditions)}
         </span>
       )}
       {player.position === "GK" && (
@@ -220,29 +176,13 @@ const TeamCard: React.FC<{
 const GeneratedTeamsDisplay: React.FC<Props> = ({
   teams,
   teamCount,
-  edition_id,
   numarEditie = 0,
-  playersPerTeam = 6,
 }) => {
-  const { isSaving, saveGeneration } = useSaveTeamGeneration({
-    editionId: edition_id,
-    teamCount,
-    playersPerTeam,
-    teams,
-  });
+  const [isSharing, setIsSharing] = useState(false);
   const gridColsClass = getGridColsClass(teamCount);
 
-  const handleExport = async () => {
-    try {
-      const image = await createTeamsImage(numarEditie);
-      if (image) downloadImage(image);
-    } catch (err) {
-      console.error("Error exporting teams image:", err);
-      alert("Eroare la exportarea imaginii.");
-    }
-  };
-
   const handleShare = async () => {
+    setIsSharing(true);
     try {
       const image = await createTeamsImage(numarEditie);
       if (!image) return;
@@ -262,6 +202,8 @@ const GeneratedTeamsDisplay: React.FC<Props> = ({
       if (err instanceof Error && err.name === "AbortError") return;
       console.error("Error sharing teams image:", err);
       alert("Eroare la pregătirea imaginii pentru WhatsApp.");
+    } finally {
+      setIsSharing(false);
     }
   };
 
@@ -273,12 +215,7 @@ const GeneratedTeamsDisplay: React.FC<Props> = ({
         2. Echipe Generate
       </h2>
 
-      <Toolbar
-        isSaving={isSaving}
-        onExport={handleExport}
-        onShare={handleShare}
-        onSave={saveGeneration}
-      />
+      <Toolbar isSharing={isSharing} onShare={handleShare} />
 
       <div
         id={CAPTURE_ELEMENT_ID}
@@ -310,11 +247,7 @@ const GeneratedTeamsDisplay: React.FC<Props> = ({
             className={`relative z-10 grid grid-cols-1 md:grid-cols-2 ${gridColsClass} gap-4 sm:gap-6`}
           >
             {teams.map((team, idx) => (
-              <TeamCard
-                key={team.name + "-" + idx}
-                team={team}
-                idx={idx}
-              />
+              <TeamCard key={team.name + "-" + idx} team={team} idx={idx} />
             ))}
           </motion.div>
         </AnimatePresence>

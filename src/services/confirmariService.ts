@@ -164,28 +164,50 @@ export async function deleteConfirmare(id: string) {
 }
 
 export async function getAllPlayersPresenceCounts() {
-  const { data, error } = await supabase
-    .from("registrations")
-    .select(
-      `
-      player_id
-    `,
-    )
-    .eq("status", "inscris");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const editionsByPlayer = new Map<string, Set<string>>();
+  const pageSize = 1000;
 
-  if (error || !data) {
-    console.error("Eroare la preluarea prezențelor:", error);
-    return { presenceMap: new Map<string, number>(), error };
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabase
+      .from("registrations")
+      .select("player_id, edition_id, editions(*)")
+      .eq("status", "inscris")
+      .range(from, from + pageSize - 1);
+
+    if (error || !data) {
+      console.error("Eroare la preluarea prezențelor:", error);
+      return { presenceMap: new Map<string, number>(), error };
+    }
+
+    for (const registration of data) {
+      const edition = firstRelation(
+        registration.editions as EditionRelation | EditionRelation[] | null,
+      );
+      const rawDate = edition?.date || edition?.data || edition?.created_at;
+      if (!rawDate) continue;
+
+      const editionDate = new Date(rawDate);
+      if (Number.isNaN(editionDate.getTime())) continue;
+      editionDate.setHours(0, 0, 0, 0);
+      if (editionDate >= today) continue;
+
+      const playerEditions =
+        editionsByPlayer.get(registration.player_id) ?? new Set();
+      playerEditions.add(registration.edition_id);
+      editionsByPlayer.set(registration.player_id, playerEditions);
+    }
+
+    if (data.length < pageSize) break;
   }
 
-  const presenceMap = new Map<string, number>();
-
-  for (const registration of data) {
-    presenceMap.set(
-      registration.player_id,
-      (presenceMap.get(registration.player_id) || 0) + 1,
-    );
-  }
+  const presenceMap = new Map(
+    [...editionsByPlayer].map(([playerId, editions]) => [
+      playerId,
+      editions.size,
+    ]),
+  );
 
   return { presenceMap, error: null };
 }
