@@ -33,16 +33,16 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variantStyles: Record<ButtonVariant, string> = {
     primary:
-      "bg-primary text-text-on-primary hover:bg-primary-hover focus:ring-primary disabled:bg-gray-400",
+      "bg-primary text-on-primary hover:bg-primary-hover focus:ring-primary disabled:bg-border disabled:text-muted",
     secondary:
-      "bg-secondary text-text-on-primary hover:bg-secondary-hover focus:ring-secondary disabled:bg-gray-300",
+      "bg-secondary text-on-primary hover:bg-secondary-hover focus:ring-secondary disabled:bg-border disabled:text-muted",
     accent:
-      "bg-accent text-text-on-accent hover:bg-accent-hover focus:ring-accent disabled:bg-red-300",
+      "bg-accent text-on-accent hover:bg-accent-hover focus:ring-accent disabled:bg-border disabled:text-muted",
     outline:
-      "border border-primary text-primary hover:bg-primary hover:text-text-on-primary focus:ring-primary disabled:border-gray-300 disabled:text-gray-400",
+      "border border-primary text-primary hover:bg-primary hover:text-on-primary focus:ring-primary disabled:border-border disabled:text-muted",
     ghost:
-      "text-primary hover:bg-primary/10 focus:ring-primary disabled:text-gray-400", // text-primary/10 pentru transparență
-    link: "text-accent hover:text-accent-hover underline focus:ring-accent disabled:text-gray-400 p-0", // Fără padding default pentru link
+      "text-primary hover:bg-[var(--color-primary-soft)] focus:ring-primary disabled:text-muted",
+    link: "text-accent hover:text-accent-hover underline focus:ring-accent disabled:text-muted p-0",
   };
 
   const sizeStyles: Record<ButtonSize, string> = {

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import type { Player, Team, PlayerPreferences } from "../lib/types";
 import PlayerSelectionAndConfig from "./players/PlayerSelectionAndConfig";
 import GeneratedTeamsDisplay from "./GenerateTeamsDisplay";
+
 import { generateTeams } from "../lib/teamService";
 
 interface Props {
@@ -10,6 +11,11 @@ interface Props {
   edition_id: string;
   numarEditie?: number;
 }
+
+// generateTeams încă acceptă un al 4-lea parametru de preferințe (perechi/separări),
+// dar algoritmul de snake draft nu-l mai folosește — trimitem un obiect gol constant
+// în loc să menținem state și UI pentru o funcționalitate inactivă.
+const EMPTY_PREFERENCES: PlayerPreferences = { pairs: [], separations: [] };
 
 const TeamOrchestrator: React.FC<Props> = ({
   allPlayers,
@@ -22,12 +28,8 @@ const TeamOrchestrator: React.FC<Props> = ({
   const [playersPerTeam, setPlayersPerTeam] = useState<number>(6);
   const [generatedTeams, setGeneratedTeams] = useState<Team[]>([]);
   const [showTeams, setShowTeams] = useState<boolean>(false);
-  const [preferences, setPreferences] = useState<PlayerPreferences>({
-    pairs: [],
-    separations: [],
-  });
 
-  // Auto-populate from registered players
+  // Jucătorii sunt preselectați automat din lista celor înregistrați la ediția curentă.
   useEffect(() => {
     const registered = allPlayers.filter((p) =>
       registeredPlayerIds.includes(p.id),
@@ -49,7 +51,7 @@ const TeamOrchestrator: React.FC<Props> = ({
       selectedPlayers,
       teamCount,
       playersPerTeam,
-      preferences,
+      EMPTY_PREFERENCES,
     );
 
     setGeneratedTeams(teams);
@@ -59,28 +61,30 @@ const TeamOrchestrator: React.FC<Props> = ({
   return (
     <div>
       <PlayerSelectionAndConfig
-        allPlayers={allPlayers}
         selectedPlayers={selectedPlayers}
-        setSelectedPlayers={setSelectedPlayers}
         teamCount={teamCount}
         setTeamCount={setTeamCount}
         playersPerTeam={playersPerTeam}
         setPlayersPerTeam={setPlayersPerTeam}
         onGenerate={handleGenerateTeams}
-        edition_id={edition_id}
-        preferences={preferences}
-        setPreferences={setPreferences}
       />
 
       {showTeams && generatedTeams.length > 0 && (
-        <GeneratedTeamsDisplay
-          teams={generatedTeams}
-          teamCount={teamCount}
-          edition_id={edition_id}
-          numarEditie={numarEditie}
-          preferences={preferences}
-          allPlayers={allPlayers}
-        />
+        <Suspense
+          fallback={
+            <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+              Se pregătește vizualizarea echipelor...
+            </div>
+          }
+        >
+          <GeneratedTeamsDisplay
+            teams={generatedTeams}
+            teamCount={teamCount}
+            edition_id={edition_id}
+            numarEditie={numarEditie}
+            playersPerTeam={playersPerTeam}
+          />
+        </Suspense>
       )}
     </div>
   );

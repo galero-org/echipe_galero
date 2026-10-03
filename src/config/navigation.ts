@@ -9,38 +9,32 @@ export interface NavLink {
 export const navigationConfig = {
   main: [
     {
-      name: "Confirmari",
+      name: "Generează echipe",
+      href: "/genereaza",
+      roles: ["admin", "moderator", "user"],
+    },
+    {
+      name: "Confirmări",
       href: "/confirmari",
       roles: ["admin", "user", "moderator"],
     },
     {
-      name: "Jucatori",
+      name: "Jucători",
       href: "/players",
       roles: ["admin", "moderator", "user"],
-    },
-    {
-      name: "Statistici",
-      href: "/statistici",
-      roles: ["admin", "moderator", "user"],
-    },
-    {
-      name: "Despre",
-      href: "/about",
-      roles: ["guest", "user", "moderator", "admin"],
     },
   ] as NavLink[],
 
   management: [
     {
-      name: "Genereaza Echipe",
-      href: "/genereaza",
-      roles: ["admin", "moderator", "user"],
+      name: "Utilizatori",
+      href: "/admin/users",
+      roles: ["admin", "moderator"],
     },
-    { name: "Utilizatori", href: "/admin/users", roles: ["admin"] },
     {
       name: "Retrageri",
       href: "/retrageri",
-      roles: ["admin", "moderator", "user"],
+      roles: ["admin", "moderator"],
     },
   ] as NavLink[],
 
@@ -49,7 +43,7 @@ export const navigationConfig = {
   ] as NavLink[],
 
   guestAction: {
-    name: "Sign In",
+    name: "Autentifică-te",
     href: "/signin",
     roles: ["guest"],
   } as NavLink,

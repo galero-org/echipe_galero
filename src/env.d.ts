@@ -1,6 +1,6 @@
 /// <reference types="astro/client" />
 
-import type { AuthenticatedUserWithProfile } from "./lib/authService";
+import type { AuthenticatedUserWithProfile } from "./lib/auth/session";
 
 declare global {
   namespace App {

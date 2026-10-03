@@ -1,8 +1,5 @@
-// src/middleware.ts
 import { defineMiddleware } from "astro:middleware";
-// Am schimbat importul pentru a folosi noua funcție optimizată
-import { getAuthenticatedSession } from "./lib/authService";
-// Importă noul tip pentru a avea acces la profile.user_role
+import { getAuthenticatedSession, clearAuthCookies } from "./lib/auth/session";
 import type { APIContext } from "astro";
 
 const publicPaths = [
@@ -13,14 +10,11 @@ const publicPaths = [
   "/api/auth/signin",
   "/api/auth/register",
   "/api/auth/callback",
+  "/api/auth/refresh",
   "/api/auth/signout",
 ];
 
-// Folosim PREFIXE pentru a acoperi TOATE sub-rutele de admin
-const adminPathPrefixes = [
-  "/admin", // Prinde /admin, /admin/users, /admin/settings, etc.
-  "/api/admin-users", // Prinde /api/admin-users, /api/admin-users/delete/1, etc.
-];
+const staffPathPrefixes = ["/admin", "/api/admin-users"];
 
 export const onRequest = defineMiddleware(async (context: APIContext, next) => {
   let currentPath = context.url.pathname;
@@ -28,77 +22,99 @@ export const onRequest = defineMiddleware(async (context: APIContext, next) => {
     currentPath = currentPath.slice(0, -1);
   }
 
-  // Inițializare locals
   context.locals.user = null;
   context.locals.profile = null;
 
-  // 1. Verificare Căi Publice (Meci Exact)
   const isPublic = publicPaths.includes(currentPath);
-
   const accessToken = context.cookies.get("sb-access-token")?.value;
   const refreshToken = context.cookies.get("sb-refresh-token")?.value;
 
-  // Dacă avem token-uri încercăm să validăm sesiunea și să populăm `locals`.
-  // Facem asta chiar și pentru pagini publice, ca Navbar/Layout să poată afișa starea corectă.
   if (accessToken && refreshToken) {
     try {
       const { session, error } = await getAuthenticatedSession(
         accessToken,
-        refreshToken
+        refreshToken,
       );
 
       if (!error && session) {
         context.locals.user = session;
         context.locals.profile = session.profile;
-      } else {
-        // Dacă sesiunea nu e validă și nu suntem pe o pagină publică, forțăm re-login.
-        if (!isPublic) {
-          context.cookies.delete("sb-access-token", { path: "/" });
-          context.cookies.delete("sb-refresh-token", { path: "/" });
+      } else if (!isPublic) {
+        try {
+          const refreshResponse = await fetch(
+            `${context.url.origin}/api/auth/refresh`,
+            {
+              method: "POST",
+              headers: { cookie: context.request.headers.get("cookie") || "" },
+            },
+          );
+
+          if (refreshResponse.ok) {
+            const { session: refreshedSession, error: refreshError } =
+              await getAuthenticatedSession(
+                context.cookies.get("sb-access-token")?.value || "",
+                context.cookies.get("sb-refresh-token")?.value || "",
+              );
+
+            if (!refreshError && refreshedSession) {
+              context.locals.user = refreshedSession;
+              context.locals.profile = refreshedSession.profile;
+            } else {
+              clearAuthCookies(context.cookies);
+              return context.redirect(
+                `/signin?error=session_expired_mw&from=${encodeURIComponent(currentPath)}`,
+              );
+            }
+          } else {
+            clearAuthCookies(context.cookies);
+            return context.redirect(
+              `/signin?error=session_expired_mw&from=${encodeURIComponent(currentPath)}`,
+            );
+          }
+        } catch (refreshErr) {
+          console.error("[MW] Refresh attempt failed", refreshErr);
+          clearAuthCookies(context.cookies);
           return context.redirect(
-            `/signin?error=session_expired_mw&from=${encodeURIComponent(
-              currentPath
-            )}`
+            `/signin?error=internal_error&from=${encodeURIComponent(currentPath)}`,
           );
         }
-        // Daca e public, pur și simplu continuăm fără profile.
       }
     } catch (err) {
-      // În caz de eroare la validare a token-ului, comportament similar: dacă ruta e protejată, redirect.
-      console.error("[MW] Eroare validare token public-path check:", err);
+      console.error("[MW] Error validating token", err);
       if (!isPublic) {
-        context.cookies.delete("sb-access-token", { path: "/" });
-        context.cookies.delete("sb-refresh-token", { path: "/" });
+        clearAuthCookies(context.cookies);
         return context.redirect(
-          `/signin?error=internal_error&from=${encodeURIComponent(currentPath)}`
+          `/signin?error=internal_error&from=${encodeURIComponent(currentPath)}`,
         );
       }
     }
-  } else {
-    // Nu sunt token-uri
-    if (!isPublic) {
-      return context.redirect(`/signin?from=${encodeURIComponent(currentPath)}`);
-    }
+  } else if (!isPublic) {
+    return context.redirect(`/signin?from=${encodeURIComponent(currentPath)}`);
   }
 
-  // 3. Verificare Autorizare (Rol de Admin)
-  const isAdminPath = adminPathPrefixes.some((prefix) =>
-    currentPath.startsWith(prefix)
+  const isStaffPath = staffPathPrefixes.some((prefix) =>
+    currentPath.startsWith(prefix),
   );
 
-  if (isAdminPath) {
-    const userRole = context.locals.profile?.userRole || context.locals.profile?.user_role;
-    if (userRole !== "admin") {
-      console.warn(`[MW] Acces admin INTERZIS pentru la ${currentPath} (rol: ${userRole})`);
+  if (isStaffPath) {
+    const userRole = context.locals.profile?.user_role;
+    if (userRole !== "admin" && userRole !== "moderator") {
+      console.warn(
+        `[MW] Staff access denied for ${currentPath} (role: ${userRole})`,
+      );
+
       if (currentPath.startsWith("/api/")) {
-        return new Response(JSON.stringify({ error: "Acces interzis: Rol insuficient" }), {
-          status: 403,
-        });
+        return new Response(
+          JSON.stringify({ error: "Acces interzis: Rol insuficient" }),
+          {
+            status: 403,
+          },
+        );
       }
-      return context.redirect("/profil?error=unauthorized_admin_access");
+
+      return context.redirect("/profil?error=unauthorized_staff_access");
     }
   }
 
-  // 4. Totul este în regulă
   return next();
 });

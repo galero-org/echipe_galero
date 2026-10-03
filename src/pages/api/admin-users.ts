@@ -1,37 +1,76 @@
 // src/pages/api/admin-users.ts
 import type { APIRoute } from "astro";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { supabaseAdmin } from "../../lib/supabaseAdmin"; // Folosește clientul admin pentru listarea utilizatorilor
 
 export const GET: APIRoute = async ({ locals }) => {
-  if (locals.profile?.role !== "admin") {
+  const currentRole = locals.profile?.user_role;
+  if (currentRole !== "admin" && currentRole !== "moderator") {
     console.warn(
-      "Acces neașteptat la API-ul admin-users de către un non-admin."
+      "Acces neașteptat la API-ul admin-users de către un non-admin.",
     );
     return new Response(JSON.stringify({ error: "Acces neautorizat." }), {
       status: 403,
     });
   }
 
-  const { data: usersData, error: listUsersError } =
-    await supabaseAdmin.auth.admin.listUsers();
+  const users: SupabaseUser[] = [];
+  const listErrors: string[] = [];
+  const pageSize = 100;
+  const fetchUsersPage = async (page: number, perPage: number) => {
+    let pageUsers: SupabaseUser[] = [];
+    let pageError: { message: string } | null = null;
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const result = await supabaseAdmin.auth.admin.listUsers({
+        page,
+        perPage,
+      });
+      if (!result.error) {
+        pageUsers = result.data.users;
+        return { users: pageUsers, error: null };
+      }
+      pageError = result.error;
+    }
+    return { users: pageUsers, error: pageError };
+  };
 
-  if (listUsersError) {
-    console.error(
-      "Eroare la listarea utilizatorilor (admin):",
-      listUsersError.message
-    );
-    return new Response(
-      JSON.stringify({
-        error: "Nu s-au putut prelua utilizatorii.",
-        details: listUsersError.message,
-      }),
-      { status: 500 }
-    );
+  for (let page = 1; page <= 1000; page += 1) {
+    const result = await fetchUsersPage(page, pageSize);
+    if (result.error) {
+      let reachedEnd = false;
+      const firstSingleUserPage = (page - 1) * pageSize + 1;
+
+      for (let offset = 0; offset < pageSize; offset += 1) {
+        const singleResult = await fetchUsersPage(
+          firstSingleUserPage + offset,
+          1,
+        );
+        if (singleResult.error) {
+          listErrors.push(
+            `utilizatorul de pe poziția ${firstSingleUserPage + offset}: ${singleResult.error.message}`,
+          );
+          continue;
+        }
+        if (singleResult.users.length === 0) {
+          reachedEnd = true;
+          break;
+        }
+        users.push(...singleResult.users);
+      }
+
+      if (reachedEnd) break;
+      continue;
+    }
+    if (result.users.length === 0) break;
+    users.push(...result.users);
   }
 
-  const users = usersData.users || [];
+  if (listErrors.length > 0) {
+    console.error("Erori la paginarea utilizatorilor:", listErrors);
+  }
+
   const userIds = users.map((u) => u.id);
-  let usersWithAppRoles = [...users]; // Inițializăm cu datele de bază
+  const profileRoles = new Map<string, string>();
 
   if (userIds.length > 0) {
     const { data: profilesData, error: profilesError } = await supabaseAdmin
@@ -42,30 +81,46 @@ export const GET: APIRoute = async ({ locals }) => {
     if (profilesError) {
       console.error(
         "Eroare la preluarea profilelor pentru utilizatorii listați:",
-        profilesError.message
+        profilesError.message,
       );
       // Poți decide să continui fără roluri sau să returnezi o eroare parțială.
       // Pentru simplitate, continuăm fără rolurile din 'profiles' în caz de eroare aici.
     } else if (profilesData) {
-      usersWithAppRoles = users.map((user) => {
-        const profile = profilesData.find((p) => p.id === user.id);
-        return {
-          ...user,
-          // Adăugăm rolul din 'profiles' dacă există, altfel încercăm din app_metadata
-          app_role:
-            profile?.role ||
-            (user.app_metadata?.role as string) ||
-            (Array.isArray(user.app_metadata?.roles)
-              ? (user.app_metadata.roles[0] as string)
-              : "N/A"),
-        };
-      });
+      profilesData.forEach((profile) =>
+        profileRoles.set(profile.id, profile.role),
+      );
     }
   }
 
-  return new Response(JSON.stringify(usersWithAppRoles), {
-    headers: {
-      "Content-Type": "application/json",
+  let usersWithAppRoles = users.map((user) => ({
+    id: user.id,
+    email: user.email,
+    phone: user.phone,
+    full_name:
+      (user.user_metadata?.full_name as string | undefined) ||
+      (user.user_metadata?.name as string | undefined),
+    app_role: (profileRoles.get(user.id) ||
+      (user.user_metadata?.user_role as string | undefined) ||
+      (user.app_metadata?.role as string | undefined) ||
+      "user") as "admin" | "moderator" | "user",
+    created_at: user.created_at,
+    last_sign_in_at: user.last_sign_in_at,
+    email_confirmed_at: user.email_confirmed_at,
+    providers: user.app_metadata?.providers as string[] | undefined,
+  }));
+
+  if (currentRole === "moderator") {
+    usersWithAppRoles = usersWithAppRoles.filter(
+      (user) => user.app_role === "user",
+    );
+  }
+
+  return new Response(
+    JSON.stringify({ users: usersWithAppRoles, warnings: listErrors }),
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
     },
-  });
+  );
 };

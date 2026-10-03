@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import { requireAuthAndRole } from "../../lib/authHelpers";
-// Importă funcția ajutătoare - ajustează calea dacă este necesar
+import { supabaseAdmin } from "../../lib/supabaseAdmin";
 
 export const GET: APIRoute = async (context) => {
   // 'context' este APIContext
@@ -17,10 +17,37 @@ export const GET: APIRoute = async (context) => {
   // Dacă nu există errorResponse, atunci userProfile este garantat a fi obiectul UserProfile.
   // Nu mai este nevoie de verificarea 'if (context.locals.profile)' aici,
   // deoarece requireAuthAndRole a făcut deja această validare.
-  return new Response(JSON.stringify(userProfile), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/json",
+  const currentUserId = context.locals.user?.id;
+  let linkedPlayer = null;
+
+  if (currentUserId) {
+    const { data: player } = await supabaseAdmin
+      .from("players")
+      .select("id, full_name, position")
+      .eq("linked_user_id", currentUserId)
+      .maybeSingle();
+
+    if (player) {
+      const { count } = await supabaseAdmin
+        .from("registrations")
+        .select("id", { count: "exact", head: true })
+        .eq("player_id", player.id)
+        .eq("status", "inscris");
+      linkedPlayer = { ...player, total_presences: count || 0 };
+    }
+  }
+
+  return new Response(
+    JSON.stringify({
+      ...userProfile,
+      linked_player_id: linkedPlayer?.id || null,
+      linked_player: linkedPlayer,
+    }),
+    {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
     },
-  });
+  );
 };

@@ -1,14 +1,19 @@
 import { useState, useCallback, useMemo } from "react";
-import { PlusCircle } from "lucide-react";
-import type { Player } from "../../lib/types";
+import { Search, X, PlusCircle } from "lucide-react";
+import type { EditablePlayerFields, Player, UserRole } from "../../lib/types";
+import { normalizeSearchText } from "../../lib/normalizeSearchText";
 import { usePlayerManagement } from "../../hooks/usePlayerManagement";
 import { PlayerFormModal } from "./PlayerFormModal";
 import { PlayerRow } from "./PlayerRow";
 import { AlertDialog } from "../AlertDialog";
 
-type PlayerFormData = Omit<Player, "id" | "created_at">;
+type PlayerFormData = EditablePlayerFields;
 
-export const PlayerList: React.FC = () => {
+interface PlayerListProps {
+  userRole: UserRole;
+}
+
+export const PlayerList: React.FC<PlayerListProps> = ({ userRole }) => {
   const {
     players,
     loading,
@@ -27,6 +32,9 @@ export const PlayerList: React.FC = () => {
     isOpen: boolean;
     message: string;
   }>({ isOpen: false, message: "" });
+  const [searchTerm, setSearchTerm] = useState("");
+  const canManagePlayers = userRole === "admin" || userRole === "moderator";
+  const canCreateOrDelete = userRole === "admin";
 
   const showAppAlert = useCallback((message: string) => {
     setAlertDialog({ isOpen: true, message });
@@ -90,6 +98,19 @@ export const PlayerList: React.FC = () => {
     [players],
   );
 
+  const filteredPlayers = useMemo(() => {
+    const normalizedSearch = normalizeSearchText(searchTerm);
+    if (!normalizedSearch) return players;
+
+    return players.filter((player) =>
+      [player.full_name, player.phone, player.email]
+        .filter(Boolean)
+        .some((value) =>
+          normalizeSearchText(String(value)).includes(normalizedSearch),
+        ),
+    );
+  }, [players, searchTerm]);
+
   if (loading && !players.length) {
     return (
       <p className="text-center text-text mt-10 text-xl">
@@ -99,46 +120,94 @@ export const PlayerList: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto mt-8 p-4 font-text">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold font-khand text-primary">
+    <div className="w-full max-w-7xl mx-auto mt-8 px-2 sm:px-4 font-text">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5 sm:mb-6">
+        <h1 className="text-3xl font-bold font-khand text-primary mb-0">
           Listă Jucători
         </h1>
-        <button
-          onClick={() => handleOpenModal()}
-          className="bg-primary hover:bg-secondary font-semibold py-2 px-4 rounded-lg shadow-md flex items-center transition-colors duration-150"
-        >
-          <PlusCircle size={20} className="mr-2" /> Adaugă Jucător
-        </button>
+        {canCreateOrDelete && (
+          <button
+            onClick={() => handleOpenModal()}
+            className="w-full sm:w-auto bg-primary text-on-primary hover:bg-secondary font-semibold py-2 px-4 rounded-lg shadow-sm flex items-center justify-center transition-colors duration-150"
+          >
+            <PlusCircle size={20} className="mr-2" /> Adaugă Jucător
+          </button>
+        )}
       </div>
 
       {hookError && !isModalOpen && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-400 rounded">
-          {hookError}
-        </div>
+        <div className="status-error mb-4">{hookError}</div>
       )}
       {successMessage && (
-        <div className="mb-4 p-3 bg-green-100 text-green-700 border border-green-400 rounded">
-          {successMessage}
+        <div className="status-success mb-4">{successMessage}</div>
+      )}
+
+      {players.length > 0 && (
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <label className="relative block w-full sm:max-w-md">
+            <Search
+              size={18}
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+            />
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Caută după nume, telefon sau email"
+              aria-label="Caută jucători"
+              className="input-shell py-2.5 pl-10 pr-10 text-sm"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                aria-label="Șterge căutarea"
+                title="Șterge căutarea"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted hover:bg-surface-muted hover:text-text"
+              >
+                <X size={17} />
+              </button>
+            )}
+          </label>
+          <span className="text-sm text-muted">
+            {filteredPlayers.length} din {players.length} jucători
+          </span>
         </div>
       )}
 
       {players.length === 0 && !loading ? (
-        <p className="text-center text-gray-500 mt-10 text-lg">
+        <p className="text-center text-muted mt-10 text-lg">
           Nu există jucători înregistrați.
         </p>
+      ) : filteredPlayers.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border bg-surface-muted px-4 py-10 text-center">
+          <p className="text-lg font-medium text-text">
+            Nu am găsit niciun jucător.
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            Încearcă un alt nume, telefon sau email.
+          </p>
+          <button
+            type="button"
+            onClick={() => setSearchTerm("")}
+            className="mt-4 text-sm font-semibold text-primary underline underline-offset-2 hover:text-secondary"
+          >
+            Șterge căutarea
+          </button>
+        </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-xl overflow-x-auto">
-          <table className="min-w-full table-auto text-sm text-text">
-            <thead className="bg-grayLight text-left text-blackAlt uppercase tracking-wider">
+        <div className="surface-card overflow-hidden">
+          <table className="w-full table-auto text-sm text-text max-md:block">
+            <thead className="bg-surface-muted text-left text-blackAlt uppercase tracking-wider max-md:hidden">
               <tr>
                 <th className="px-5 py-3">Nume Complet</th>
                 {showGradeColumnInTable && <th className="px-5 py-3">Nivel</th>}
                 <th className="px-5 py-3 text-right">Acțiuni</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
-              {players.map((player) => (
+            <tbody className="divide-y divide-gray-200 max-md:block max-md:divide-y-0 max-md:p-2">
+              {filteredPlayers.map((player) => (
                 <PlayerRow
                   key={player.id}
                   player={player}
@@ -146,6 +215,8 @@ export const PlayerList: React.FC = () => {
                   onToggleExpand={toggleRow}
                   onEdit={handleOpenModal}
                   onDelete={handleDeletePlayer}
+                  canManage={canManagePlayers}
+                  canDelete={canCreateOrDelete}
                   showGradeInRow={showGradeColumnInTable}
                 />
               ))}

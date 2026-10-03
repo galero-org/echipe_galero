@@ -1,14 +1,32 @@
 ---
 import Layout from "../layouts/Layout.astro";
+const error = Astro.url.searchParams.get("error");
 export const prerender = false;
 ---
 
 <Layout title="Register">
   <div
-    class="flex items-center justify-center min-h-screen bg-grayLight font-text"
+    class="flex min-h-[calc(100vh-5rem)] items-center justify-center bg-grayLight px-4 py-8 font-text sm:px-6"
   >
-    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md space-y-6">
-      <h1 class="text-3xl font-bold text-center text-primary">Register</h1>
+    <div
+      class="w-full max-w-md space-y-6 rounded-2xl bg-white p-6 shadow-xl sm:p-8"
+    >
+      <div class="space-y-2 text-center">
+        <h1 class="text-3xl font-bold text-primary">Register</h1>
+        <p class="text-sm text-text">Creează-ți contul Galero.</p>
+      </div>
+      {
+        error && (
+          <p
+            class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            role="alert"
+          >
+            {error === "missing_credentials"
+              ? "Completează emailul și parola."
+              : "Contul nu a putut fi creat. Verifică datele și încearcă din nou."}
+          </p>
+        )
+      }
       <p class="text-center text-sm text-text">
         Already have an account?
         <a href="/signin" class="text-accent hover:underline">Sign in</a>
@@ -25,7 +43,8 @@ export const prerender = false;
             id="email"
             placeholder="you@example.com"
             required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+            autocomplete="email"
+            class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent"
           />
         </div>
 
@@ -39,13 +58,15 @@ export const prerender = false;
             id="password"
             placeholder="Your password"
             required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent"
+            minlength="8"
+            autocomplete="new-password"
+            class="w-full rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-accent"
           />
         </div>
 
         <button
           type="submit"
-          class="w-full py-2 px-4 bg-primary rounded-lg hover:bg-opacity-90 transition"
+          class="w-full rounded-lg bg-primary px-4 py-3 font-semibold text-white transition hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
         >
           Register
         </button>

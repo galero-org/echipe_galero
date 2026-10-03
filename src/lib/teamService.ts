@@ -195,7 +195,7 @@ export function generateTeams(
   });
 
   // --- Step 3: Build preference maps ---
-  const { pairMap, separationMap } = buildPreferenceMaps(preferences);
+  const { separationMap } = buildPreferenceMaps(preferences);
   const placedPlayerIds = new Set<string>();
 
   // --- Step 4: Distribute goalkeepers (one per team if possible) ---

@@ -1,0 +1,15 @@
+---
+import Layout from "../../../layouts/Layout.astro";
+import UserProfileAdmin from "../../../components/admin/users/UserProfileAdmin";
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect("/admin/users");
+---
+
+<Layout title="Profil utilizator">
+  <main class="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 sm:py-8">
+    <div class="mx-auto max-w-5xl">
+      <UserProfileAdmin client:load userId={id} />
+    </div>
+  </main>
+</Layout>

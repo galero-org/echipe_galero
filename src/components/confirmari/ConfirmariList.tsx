@@ -80,10 +80,12 @@ const ContentDisplay: React.FC<{
 
 interface ConfirmariListProps {
   initialEditionId?: string;
+  canAddPlayer: boolean;
 }
 
 export const ConfirmariList: React.FC<ConfirmariListProps> = ({
   initialEditionId,
+  canAddPlayer,
 }) => {
   const [currentEditionId, setCurrentEditionId] = useState<number | "">(
     initialEditionId ? parseInt(initialEditionId, 10) : "",
@@ -100,6 +102,11 @@ export const ConfirmariList: React.FC<ConfirmariListProps> = ({
     loading: playersLoading,
     error: playersError,
   } = usePlayersSimpleList();
+  const [confirmationPlayers, setConfirmationPlayers] = useState<Player[]>([]);
+
+  useEffect(() => {
+    setConfirmationPlayers(players);
+  }, [players]);
 
   const {
     registrations,
@@ -185,6 +192,42 @@ export const ConfirmariList: React.FC<ConfirmariListProps> = ({
     ],
   );
 
+  const handleQuickAddPlayer = useCallback(
+    async (fullName: string): Promise<Player | null> => {
+      try {
+        const response = await fetch("/api/players", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            full_name: fullName,
+            grade: 5,
+            position: "FIELD",
+          }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.error || "Eroare la adăugarea jucătorului.");
+        }
+
+        const newPlayer: Player = { ...result, totalEditions: 0 };
+        setConfirmationPlayers((currentPlayers) => [
+          ...currentPlayers,
+          newPlayer,
+        ]);
+        showToast("Jucător adăugat în listă.");
+        return newPlayer;
+      } catch (err) {
+        showToast(
+          err instanceof Error
+            ? err.message
+            : "Eroare la adăugarea jucătorului.",
+        );
+        return null;
+      }
+    },
+    [showToast],
+  );
+
   const handleUpdateRegStatus = useCallback(
     async (id: string, status: Registration["status"]) => {
       await hookUpdateStatus(id, status, new Date().toISOString());
@@ -218,10 +261,12 @@ export const ConfirmariList: React.FC<ConfirmariListProps> = ({
       />
 
       <AddConfirmationForm
-        players={players}
+        players={confirmationPlayers}
         onAddConfirmation={handleAddConfirmationSubmit}
         disabled={currentEditionId === "" || overallLoading}
         isLoading={confirmationsLoading}
+        canAddPlayer={canAddPlayer}
+        onQuickAddPlayer={handleQuickAddPlayer}
       />
 
       <ContentDisplay

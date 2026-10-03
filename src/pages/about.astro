@@ -3,7 +3,7 @@ import Layout from "../layouts/Layout.astro";
 export const prerender = false;
 
 const organizatori = [
-  { nume: "Deloiu Florin", telefon: "40746370722" }, // Înlocuiește cu numerele reale
+  { nume: "Deloiu Florin", telefon: "40746370722" },
   { nume: "Ioviță Lucian", telefon: "40741762711" },
   { nume: "Apetroaei Cezar", telefon: "40774005451" },
 ];
@@ -16,233 +16,110 @@ const googleMapsEmbedUrl =
 ---
 
 <Layout title="Despre Galero Football Iași">
-  <style>
-    .section-card {
-      @apply bg-white shadow-xl rounded-lg p-6 md:p-8 transition-all duration-300 ease-in-out hover:shadow-2xl;
-    }
-    .btn {
-      @apply px-6 py-3 rounded-lg font-semibold text-white shadow-md transition-all duration-300 ease-in-out;
-    }
-    .btn-primary {
-      @apply bg-blue-600 hover:bg-blue-700 transform hover:scale-105;
-    }
-    .btn-secondary {
-      @apply bg-green-500 hover:bg-green-600 transform hover:scale-105;
-    }
-    .btn-whatsapp {
-      @apply bg-whatsapp hover:bg-whatsapp-dark flex items-center justify-center space-x-2;
-    }
-    .icon {
-      @apply w-6 h-6 inline-block mr-2;
-    }
-  </style>
-
-  <div class="bg-gradient-to-br min-h-screen py-8 md:py-12 px-4">
-    <header class="text-center mb-12 md:mb-16">
-      <img
-        src="/images/galero.jpg"
-        alt="Galero Football Logo"
-        class="mx-auto h-24 md:h-32 mb-4"
-      />
-      <h1
-        class="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-sky-400 to-indigo-500 mb-3"
-      >
-        Fotbal Galero Iași
-      </h1>
-      <p class="text-lg md:text-xl text-sky-600">
-        Pasiune pentru fotbal, prietenie și voie bună!
-      </p>
-    </header>
-
-    <main class="max-w-5xl mx-auto space-y-10 md:space-y-12">
+  <div class="min-h-screen bg-slate-50 px-4 py-10 md:px-6 lg:px-8">
+    <main class="mx-auto flex max-w-5xl flex-col gap-6">
       <section
-        class="section-card grid md:grid-cols-2 gap-6 md:gap-8 items-center"
+        class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm md:p-10"
       >
-        <div>
-          <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
-            Când și Unde?
-          </h2>
-          <div class="space-y-3 text-gray-700">
-            <p class="flex items-center">
-              <svg
-                class="icon text-blue-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                ><path
-                  fill-rule="evenodd"
-                  d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                  clip-rule="evenodd"></path></svg
-              >
-              <strong>Sâmbăta:</strong> 20:00 – 22:00
+        <div
+          class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between"
+        >
+          <div class="max-w-2xl">
+            <p
+              class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500"
+            >
+              Despre comunitate
             </p>
-            <p class="flex items-center">
-              <svg
-                class="icon text-red-500"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-                ><path
-                  fill-rule="evenodd"
-                  d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                  clip-rule="evenodd"></path></svg
-              >
-              <strong>Locație:</strong> Terenul Magic Sport Center, Tudor Vladimirescu,
-              Iași
+            <h1 class="text-3xl font-bold text-slate-900 sm:text-4xl">
+              Fotbal Galero Iași
+            </h1>
+            <p class="mt-4 text-lg leading-8 text-slate-600">
+              Un grup simplu, prietenos și activ, unde meciurile sunt mai mult
+              decât un joc: sunt șansa de a petrece timp bun și de a ajuta
+              comunitatea să se unească.
             </p>
           </div>
-        </div>
-        <div class="h-64 md:h-80 rounded-lg overflow-hidden shadow-md">
-          <iframe
-            class="w-full h-full border-0"
-            src={googleMapsEmbedUrl}
-            allowfullscreen=""
-            loading="lazy"
-            referrerpolicy="no-referrer-when-downgrade"></iframe>
-        </div>
-      </section>
-
-      <section class="section-card text-center">
-        <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
-          Spiritul Galero
-        </h2>
-        <img
-          src="/images/team-organizers.jpg"
-          alt="Echipa Galero Football"
-          class="mx-auto rounded-lg shadow-md mb-6 w-full max-w-md h-auto object-cover max-h-72"
-        />
-        <p class="text-gray-700 leading-relaxed max-w-2xl mx-auto">
-          La Galero Football, nu este vorba doar despre a alerga după o minge.
-          Este despre camaraderie, respect reciproc și bucuria de a petrece timp
-          de calitate împreună. Fiecare meci este o ocazie de a ne depăși
-          limitele, de a ne încuraja și, cel mai important, de a ne distra.
-          Suntem un grup unit, primitor și mereu gata pentru o miuță ca la
-          carte!
-        </p>
-      </section>
-
-      <section
-        class="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 md:p-8 rounded-lg shadow-xl text-center"
-      >
-        <h2 class="text-2xl md:text-3xl font-bold mb-3">Vino în Echipă!</h2>
-        <p class="mb-6 text-lg">
-          Ești gata să ni te alături pe teren? Intră în grupul nostru de
-          WhatsApp pentru a fi la curent cu organizarea meciurilor și discuțiile
-          echipei!
-        </p>
-        <a
-          href={linkInvitatieWhatsAppGrup}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="btn bg-green-600 text-white hover:bg-green-700 hover:bg-gray-100 transform hover:scale-105 inline-flex items-center"
-        >
-          <svg
-            class="icon fill-current"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-            ><path
-              d="M20.52,3.48A11.91,11.91,0,0,0,12,0h0A12,12,0,0,0,0,12v0a12,12,0,0,0,12,12h0a12,12,0,0,0,10.34-5.93A.61.61,0,0,0,22,17.39l0,0L21.52,14a.62.62,0,0,0-.54-.46H18.3a.62.62,0,0,0-.61.62v1a7.1,7.1,0,0,1-6.82,5.27A7.23,7.23,0,0,1,3.64,12a7.23,7.23,0,0,1,7.23-7.23A7.1,7.1,0,0,1,18.1,10v1a.62.62,0,0,0,.61.62h2.68a.62.62,0,0,0,.54-.46L22.45,8.2a.61.61,0,0,0-.28-.73A11.91,11.91,0,0,0,20.52,3.48ZM12,8.47A3.53,3.53,0,1,0,15.53,12,3.53,3.53,0,0,0,12,8.47Z"
-            ></path></svg
-          >
-          Alătură-te Grupului WhatsApp
-        </a>
-      </section>
-
-      <section class="section-card">
-        <h2
-          class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 text-center"
-        >
-          🧑‍💼 Organizatorii Noștri Dedicați
-        </h2>
-        <div class="grid sm:grid-cols-1 md:grid-cols-3 gap-6">
-          {
-            organizatori.map((org) => (
-              <div class="bg-gray-50 p-4 rounded-lg shadow-md text-center hover:shadow-lg transition-shadow duration-300">
-                <img
-                  src={`https://ui-avatars.com/api/?name=${org.nume.replace(" ", "+")}&background=random&color=fff&size=96`}
-                  alt={org.nume}
-                  class="w-24 h-24 rounded-full mx-auto mb-3 border-4 border-white shadow-sm"
-                />
-                <h3 class="text-lg font-semibold text-gray-700">{org.nume}</h3>
-                <a
-                  href={`https://wa.me/${org.telefon}?text=${encodeURIComponent(`Salut ${org.nume.split(" ")[1]}, aș dori mai multe detalii despre competiția de fotbal Galero.`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="mt-2 inline-block text-sm text-green-600 hover:text-green-700 font-medium"
-                >
-                  Contactează pe WhatsApp
-                </a>
-              </div>
-            ))
-          }
-        </div>
-      </section>
-
-      <section
-        class="section-card bg-gradient-to-br from-yellow-400 to-amber-500 text-white"
-      >
-        <div class="text-center">
           <img
             src="/images/galero.jpg"
-            alt="Galero Logo"
-            class="h-16 md:h-20 mx-auto mb-4"
+            alt="Galero Football Logo"
+            class="h-24 w-auto rounded-2xl object-contain"
           />
         </div>
-        <h2 class="text-2xl md:text-3xl font-bold text-center mb-3">
-          🎁 Sponsorul Nostru de Suflet
-        </h2>
-        <p class="text-center leading-relaxed mb-4 max-w-xl mx-auto">
-          O mulțumire specială lui <strong>Ioviță Lucian</strong> și firmei sale
-          de cadouri personalizate,
+      </section>
+
+      <section
+        class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm md:p-10"
+      >
+        <div class="grid gap-6 md:grid-cols-[1.1fr_0.9fr] md:items-start">
+          <div>
+            <h2 class="text-2xl font-semibold text-slate-900">Când și unde?</h2>
+            <ul class="mt-4 space-y-3 text-slate-600">
+              <li><strong>Sâmbăta:</strong> 20:00 – 22:00</li>
+              <li>
+                <strong>Locație:</strong> Terenul Magic Sport Center, Tudor Vladimirescu,
+                Iași
+              </li>
+            </ul>
+          </div>
+          <div class="overflow-hidden rounded-2xl border border-slate-200">
+            <iframe
+              class="h-64 w-full border-0"
+              src={googleMapsEmbedUrl}
+              allowfullscreen=""
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"></iframe>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm md:p-10"
+      >
+        <div
+          class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between"
+        >
+          <div class="max-w-2xl">
+            <h2 class="text-2xl font-semibold text-slate-900">
+              Vino în echipă
+            </h2>
+            <p class="mt-2 text-slate-600">
+              Ești gata să ni te alături pe teren? Intră în grupul de WhatsApp
+              pentru a fi la curent cu organizarea meciurilor.
+            </p>
+          </div>
           <a
-            href="https://galero.ro"
+            href={linkInvitatieWhatsAppGrup}
             target="_blank"
             rel="noopener noreferrer"
-            class="font-bold underline hover:text-yellow-100">Galero.ro</a
-          >, pentru sprijinul constant. Datorită generozității lor, meciurile
-          noastre sunt posibile și mai antrenante!
-        </p>
-        <div class="text-center mt-6">
-          <a
-            href="https://galero.ro"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="btn bg-yellow-600 text-white hover:bg-yellow-700"
+            class="inline-flex items-center justify-center rounded-full bg-emerald-600 px-5 py-3 font-medium text-white transition hover:bg-emerald-700"
           >
-            Vizitează Galero.ro
+            Alătură-te grupului WhatsApp
           </a>
         </div>
       </section>
 
-      <section class="section-card">
-        <h2
-          class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 text-center"
-        >
-          📸 Galerie Foto: Momente de Neuitat
-        </h2>
-        <div
-          class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6"
-        >
+      <section
+        class="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm md:p-10"
+      >
+        <h2 class="text-2xl font-semibold text-slate-900">Organizatorii</h2>
+        <div class="mt-6 grid gap-4 md:grid-cols-3">
           {
-            [
-              {
-                src: "/images/fotbal1.jpg",
-                alt: "Acțiune pe teren Galero Football",
-              },
-              {
-                src: "/images/fotbal2.jpg",
-                alt: "Echipa Galero în timpul meciului",
-              },
-              {
-                src: "/images/fotbal3.jpg",
-                alt: "Bucurie după gol Galero Football",
-              },
-            ].map((img) => (
-              <div class="aspect-w-4 aspect-h-3 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
+            organizatori.map((org) => (
+              <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
                 <img
-                  src={img.src}
-                  alt={img.alt}
-                  class="w-full h-full object-cover"
-                  loading="lazy"
+                  src={`https://ui-avatars.com/api/?name=${org.nume.replace(" ", "+")}&background=random&color=fff&size=96`}
+                  alt={org.nume}
+                  class="mx-auto mb-3 h-20 w-20 rounded-full border-4 border-white shadow-sm"
                 />
+                <h3 class="font-semibold text-slate-900">{org.nume}</h3>
+                <a
+                  href={`https://wa.me/${org.telefon}?text=${encodeURIComponent(`Salut ${org.nume.split(" ")[1]}, aș dori mai multe detalii despre competiția de fotbal Galero.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="mt-2 inline-block text-sm font-medium text-emerald-600 hover:text-emerald-700"
+                >
+                  Contactează pe WhatsApp
+                </a>
               </div>
             ))
           }

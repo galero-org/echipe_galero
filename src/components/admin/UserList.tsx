@@ -22,7 +22,7 @@ const UserListClient: React.FC = () => {
           }));
           throw new Error(
             errorData.error ||
-              `Eroare ${response.status}: ${response.statusText}`
+              `Eroare ${response.status}: ${response.statusText}`,
           );
         }
         const data: SupabaseAuthUser[] = await response.json();
@@ -41,7 +41,7 @@ const UserListClient: React.FC = () => {
       } catch (err) {
         console.error("Eroare la preluarea utilizatorilor:", err);
         setError(
-          err instanceof Error ? err.message : "A apărut o eroare necunoscută."
+          err instanceof Error ? err.message : "A apărut o eroare necunoscută.",
         );
       } finally {
         setLoading(false);
@@ -105,7 +105,7 @@ const UserListClient: React.FC = () => {
           {users.map((user) => (
             <tr
               key={user.id}
-              className="hover:bg-surface/50 transition-colors duration-100"
+              className="hover:bg-[var(--color-surface-muted)] transition-colors duration-100"
             >
               {" "}
               {/* ușor hover */}
@@ -119,12 +119,12 @@ const UserListClient: React.FC = () => {
                 <span
                   className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     user.app_role === "admin"
-                      ? "bg-accent/20 text-accent"
+                      ? "bg-[var(--color-accent-soft)] text-accent"
                       : user.app_role === "moderator"
-                      ? "bg-info/20 text-info"
-                      : user.app_role === "user"
-                      ? "bg-success/20 text-success"
-                      : "bg-gray-light text-text-muted"
+                        ? "bg-[var(--color-info-soft)] text-info"
+                        : user.app_role === "user"
+                          ? "bg-[var(--color-success-soft)] text-success"
+                          : "bg-gray-light text-text-muted"
                   }`}
                 >
                   {user.app_role}

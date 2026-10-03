@@ -1,5 +1,12 @@
-import type { AstroGlobal } from "astro";
+import type { APIContext } from "astro";
 import type { UserProfile } from "./types";
+
+type AuthContext = Pick<APIContext, "locals">;
+
+export const STAFF_ROLES: Array<UserProfile["user_role"]> = [
+  "admin",
+  "moderator",
+];
 
 interface AuthResult {
   user: UserProfile | null;
@@ -18,8 +25,8 @@ interface AuthResult {
  * @returns Un obiect AuthResult conținând profilul utilizatorului sau un errorResponse.
  */
 export function requireAuthAndRole(
-  astro: AstroGlobal, // Tipul simplificat și corect pentru contextul Astro
-  allowedRoles: Array<UserProfile["userRole"]> = []
+  astro: AuthContext,
+  allowedRoles: Array<UserProfile["user_role"]> = [],
 ): AuthResult {
   const userFromLocals = astro.locals.user;
   const profileFromLocals = astro.locals.profile;
@@ -32,14 +39,14 @@ export function requireAuthAndRole(
         {
           status: 401, // Unauthorized
           headers: { "Content-Type": "application/json" },
-        }
+        },
       ),
     };
   }
 
   if (
     allowedRoles.length > 0 &&
-    !allowedRoles.includes(profileFromLocals.userRole)
+    !allowedRoles.includes(profileFromLocals.user_role)
   ) {
     return {
       user: profileFromLocals,
@@ -48,7 +55,7 @@ export function requireAuthAndRole(
         {
           status: 403,
           headers: { "Content-Type": "application/json" },
-        }
+        },
       ),
     };
   }

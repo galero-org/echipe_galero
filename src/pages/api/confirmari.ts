@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { supabase } from "../../lib/supabase";
+import { requireAuthAndRole, STAFF_ROLES } from "../../lib/authHelpers";
 import {
   getConfirmari,
   insertConfirmare,
@@ -7,12 +7,8 @@ import {
   deleteConfirmare,
 } from "../../services/confirmariService";
 
-export const GET: APIRoute = async ({ request }) => {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+export const GET: APIRoute = async ({ request, locals }) => {
+  if (!locals.user || !locals.profile) {
     return new Response(JSON.stringify({ error: "Not authenticated" }), {
       status: 401,
     });
@@ -26,7 +22,7 @@ export const GET: APIRoute = async ({ request }) => {
       JSON.stringify({ error: "Missing or invalid editionId" }),
       {
         status: 400,
-      }
+      },
     );
   }
 
@@ -44,7 +40,11 @@ export const GET: APIRoute = async ({ request }) => {
   });
 };
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async (context) => {
+  const { errorResponse } = requireAuthAndRole(context, STAFF_ROLES);
+  if (errorResponse) return errorResponse;
+
+  const { request } = context;
   const body = await request.json();
 
   const { status, registered_at, player_id, numar_editie } = body;
@@ -74,7 +74,11 @@ export const POST: APIRoute = async ({ request }) => {
   });
 };
 
-export const PUT: APIRoute = async ({ request }) => {
+export const PUT: APIRoute = async (context) => {
+  const { errorResponse } = requireAuthAndRole(context, STAFF_ROLES);
+  if (errorResponse) return errorResponse;
+
+  const { request } = context;
   const body = await request.json();
 
   const { id, ...updates } = body;
@@ -98,7 +102,11 @@ export const PUT: APIRoute = async ({ request }) => {
   });
 };
 
-export const DELETE: APIRoute = async ({ request }) => {
+export const DELETE: APIRoute = async (context) => {
+  const { errorResponse } = requireAuthAndRole(context, STAFF_ROLES);
+  if (errorResponse) return errorResponse;
+
+  const { request } = context;
   const body = await request.json();
 
   const { id } = body;

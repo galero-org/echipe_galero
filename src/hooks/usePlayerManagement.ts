@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import type { Player } from "../lib/types";
+import type { EditablePlayerFields, Player } from "../lib/types";
 
-type PlayerFormData = Omit<Player, "id" | "created_at">;
+type PlayerFormData = EditablePlayerFields;
 
 interface UsePlayerManagementReturn {
   players: Player[];
@@ -12,7 +12,7 @@ interface UsePlayerManagementReturn {
   addPlayer: (playerData: PlayerFormData) => Promise<Player | null>;
   updatePlayer: (
     id: string,
-    playerData: PlayerFormData
+    playerData: PlayerFormData,
   ) => Promise<Player | null>;
   deletePlayer: (id: string) => Promise<boolean>;
   clearMessages: () => void;
@@ -28,7 +28,7 @@ export const usePlayerManagement = (): UsePlayerManagementReturn => {
 
   const displayTempMessage = (
     setter: React.Dispatch<React.SetStateAction<string | null>>,
-    message: string
+    message: string,
   ) => {
     //
     setter(message); //
@@ -53,7 +53,7 @@ export const usePlayerManagement = (): UsePlayerManagementReturn => {
       //
       console.error("Eroare la preluarea jucătorilor:", err); //
       setError(
-        err instanceof Error ? err.message : "Eroare la preluarea jucătorilor."
+        err instanceof Error ? err.message : "Eroare la preluarea jucătorilor.",
       ); //
     } finally {
       setLoading(false); //
@@ -77,11 +77,11 @@ export const usePlayerManagement = (): UsePlayerManagementReturn => {
       });
       if (!response.ok)
         throw new Error(
-          `Eroare la adăugarea jucătorului: ${response.statusText}`
+          `Eroare la adăugarea jucătorului: ${response.statusText}`,
         ); //
       const newPlayer = await response.json(); //
       setPlayers((prev) =>
-        [...prev, newPlayer].sort((a, b) => b.grade - a.grade)
+        [...prev, newPlayer].sort((a, b) => b.grade - a.grade),
       );
       displayTempMessage(setSuccessMessage, "Jucător adăugat cu succes!"); //
       return newPlayer;
@@ -89,7 +89,7 @@ export const usePlayerManagement = (): UsePlayerManagementReturn => {
       //
       console.error("Eroare la adăugarea jucătorului:", err); //
       setError(
-        err instanceof Error ? err.message : "Eroare la adăugarea jucătorului."
+        err instanceof Error ? err.message : "Eroare la adăugarea jucătorului.",
       ); //
       return null;
     } finally {
@@ -110,13 +110,13 @@ export const usePlayerManagement = (): UsePlayerManagementReturn => {
       });
       if (!response.ok)
         throw new Error(
-          `Eroare la actualizarea jucătorului: ${response.statusText}`
+          `Eroare la actualizarea jucătorului: ${response.statusText}`,
         ); //
       const updatedPlayer = await response.json(); //
       setPlayers((prev) =>
         prev
           .map((p) => (p.id === id ? updatedPlayer : p))
-          .sort((a, b) => b.grade - a.grade)
+          .sort((a, b) => b.grade - a.grade),
       );
       displayTempMessage(setSuccessMessage, "Jucător actualizat cu succes!"); //
       return updatedPlayer;
@@ -126,7 +126,7 @@ export const usePlayerManagement = (): UsePlayerManagementReturn => {
       setError(
         err instanceof Error
           ? err.message
-          : "Eroare la actualizarea jucătorului."
+          : "Eroare la actualizarea jucătorului.",
       ); //
       return null;
     } finally {
@@ -145,7 +145,7 @@ export const usePlayerManagement = (): UsePlayerManagementReturn => {
       }); // Folosește endpoint-ul dinamic
       if (!response.ok)
         throw new Error(
-          `Eroare la ștergerea jucătorului: ${response.statusText}`
+          `Eroare la ștergerea jucătorului: ${response.statusText}`,
         ); //
       setPlayers((prev) => prev.filter((p) => p.id !== id)); //
       displayTempMessage(setSuccessMessage, "Jucător șters cu succes!"); //
@@ -154,7 +154,7 @@ export const usePlayerManagement = (): UsePlayerManagementReturn => {
       //
       console.error("Eroare la ștergerea jucătorului:", err); //
       setError(
-        err instanceof Error ? err.message : "Eroare la ștergerea jucătorului."
+        err instanceof Error ? err.message : "Eroare la ștergerea jucătorului.",
       ); //
       return false;
     } finally {

@@ -9,7 +9,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const password = formData.get("password")?.toString();
 
   if (!email || !password) {
-    return new Response("Email and password are required", { status: 400 });
+    return redirect("/register?error=missing_credentials");
   }
 
   const { error } = await supabase.auth.signUp({
@@ -18,8 +18,9 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   });
 
   if (error) {
-    return new Response(error.message, { status: 500 });
+    console.error("[Register] Registration error:", error.message);
+    return redirect("/register?error=registration_failed");
   }
 
-  return redirect("/signin");
+  return redirect("/signin?registered=1");
 };

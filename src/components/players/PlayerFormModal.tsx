@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef, type FormEvent } from "react";
 import { X } from "lucide-react"; //
-import type { Player, PlayerField } from "../../lib/types"; //
+import type {
+  EditablePlayerFields,
+  Player,
+  PlayerField,
+} from "../../lib/types"; //
 
-type PlayerFormData = Omit<Player, "id" | "created_at">; //
+type PlayerFormData = EditablePlayerFields; //
 // Datele inițiale pentru formularul de adăugare
 const initialModalFormData: PlayerFormData = {
   //
@@ -124,7 +128,7 @@ export const PlayerFormModal: React.FC<PlayerFormModalProps> = ({
   return (
     // Fundal semi-transparent pentru modal
     <div
-      className="fixed inset-0 bg-blackAlt bg-opacity-60 flex items-center justify-center p-4 z-50 transition-opacity duration-300 ease-in-out"
+      className="fixed inset-0 bg-blackAlt/60 flex items-center justify-center p-4 z-50 transition-opacity duration-300 ease-in-out"
       onClick={(e) => {
         // Close only if clicking outside the modal
         if (e.target === e.currentTarget) {
@@ -136,7 +140,7 @@ export const PlayerFormModal: React.FC<PlayerFormModalProps> = ({
       {/* */}
       {/* Containerul modalului */}
       <div
-        className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md transform transition-all duration-300 ease-in-out scale-100"
+        className="bg-surface p-6 rounded-lg shadow-2xl w-full max-w-md transform transition-all duration-300 ease-in-out scale-100 border border-border"
         ref={modalRef}
         tabIndex={-1}
         role="dialog"
@@ -158,7 +162,7 @@ export const PlayerFormModal: React.FC<PlayerFormModalProps> = ({
             type="button"
             title="Închide modal"
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
+            className="text-muted hover:text-text"
           >
             {" "}
             {/* */}
@@ -167,11 +171,7 @@ export const PlayerFormModal: React.FC<PlayerFormModalProps> = ({
         </div>
         {/* Afișează eroarea (fie cea internă, fie cea pasată) */}
         {(internalError || formError) && (
-          <div className="mb-3 p-2 bg-red-100 text-red-700 border border-red-300 rounded text-sm">
-            {" "}
-            {/* */}
-            {internalError || formError}
-          </div>
+          <div className="status-error mb-3">{internalError || formError}</div>
         )}
         {/* Formularul */}
         <form onSubmit={handleSubmitForm}>
@@ -194,7 +194,7 @@ export const PlayerFormModal: React.FC<PlayerFormModalProps> = ({
               name="full_name"
               value={playerFormData.full_name}
               onChange={handleInputChange}
-              className="w-full p-2 border border-grayLight rounded-md focus:ring-primary focus:border-primary"
+              className="input-shell"
               required
             />{" "}
             {/* */}
@@ -216,7 +216,7 @@ export const PlayerFormModal: React.FC<PlayerFormModalProps> = ({
               name="email"
               value={playerFormData.email || ""}
               onChange={handleInputChange}
-              className="w-full p-2 border border-grayLight rounded-md focus:ring-primary focus:border-primary"
+              className="input-shell"
             />{" "}
             {/* */}
           </div>
@@ -237,7 +237,7 @@ export const PlayerFormModal: React.FC<PlayerFormModalProps> = ({
               name="phone"
               value={playerFormData.phone || ""}
               onChange={handleInputChange}
-              className="w-full p-2 border border-grayLight rounded-md focus:ring-primary focus:border-primary"
+              className="input-shell"
             />{" "}
             {/* */}
           </div>

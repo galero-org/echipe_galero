@@ -1,6 +1,9 @@
 ---
 import ConfirmariList from "../../components/confirmari/ConfirmariList.tsx";
 import Layout from "../../layouts/Layout.astro";
+import { getLatestEditionNumber } from "../../services/confirmariService";
+
+const latestEditionNumber = await getLatestEditionNumber();
 ---
 
 <Layout title="Gestionare Confirmări">
@@ -16,6 +19,12 @@ import Layout from "../../layouts/Layout.astro";
       so it will start in the "select an edition" state.
     */
     }
-    <ConfirmariList client:load />
+    <ConfirmariList
+      client:load
+      initialEditionId={latestEditionNumber
+        ? String(latestEditionNumber)
+        : undefined}
+      canAddPlayer={Astro.locals.profile?.user_role === "admin"}
+    />
   </main>
 </Layout>

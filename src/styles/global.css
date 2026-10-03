@@ -4,57 +4,248 @@
 @import "tailwindcss/utilities";
 
 :root {
-  /* Paleta de culori */
-  --color-primary: #252525; /* Negru/Gri închis pentru text principal, fundaluri butoane primare */
-  --color-primary-hover: #404040; /* O variantă mai deschisă pentru hover pe primar */
+  color-scheme: light;
+  --color-primary: #102a43;
+  --color-primary-hover: #243b53;
+  --color-primary-soft: rgba(16, 42, 67, 0.08);
+  --color-secondary: #486581;
+  --color-secondary-hover: #334e68;
+  --color-secondary-soft: rgba(72, 101, 129, 0.08);
+  --color-accent: #d95d39;
+  --color-accent-hover: #b9462b;
+  --color-accent-soft: rgba(217, 93, 57, 0.14);
+  --color-text: #334e68;
+  --color-text-muted: #627d98;
+  --color-text-on-primary: #ffffff;
+  --color-text-on-accent: #ffffff;
+  --color-background: #f4f7f5;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8fafc;
+  --color-border: #d9e2ec;
+  --color-black-alt: #102a43;
+  --color-gray-light: #f4f7f5;
+  --color-success: #2f855a;
+  --color-success-soft: #d9f7e7;
+  --color-error: #c53030;
+  --color-error-soft: #fde8e8;
+  --color-warning: #b7791f;
+  --color-warning-soft: #fff4d5;
+  --color-info: #2b6cb0;
+  --color-info-soft: #dfeefb;
+  --font-sans: "Avenir Next", "Segoe UI", sans-serif;
+  --font-serif: Georgia, serif;
+  --font-display: "Avenir Next", "Segoe UI", sans-serif;
 
-  --color-secondary: #54595f; /* Gri mediu pentru text secundar, accente */
-  --color-secondary-hover: #6a7076; /* Hover pentru secundar */
-
-  --color-accent: #fc5959; /* Roșu/Portocaliu pentru accente, butoane de acțiune speciale */
-  --color-accent-hover: #fa3b3b; /* Hover pentru accent */
-
-  --color-text: #7a7a7a; /* Gri pentru text general de paragraf */
-  --color-text-on-primary: #ffffff; /* Text alb pentru fundaluri primare închise */
-  --color-text-on-accent: #ffffff; /* Text alb pentru fundaluri accent închise */
-
-  --color-background: #ffffff; /* Fundal principal al site-ului (ex: alb) */
-  --color-surface: #f7fafc; /* Fundal pentru carduri, secțiuni (ex: gri foarte deschis) */
-  --color-border: #e2e8f0; /* Culoare pentru borduri subtile */
-
-  --color-success: #48bb78; /* Verde pentru mesaje de succes */
-  --color-error: #f56565; /* Roșu pentru mesaje de eroare */
-  --color-warning: #ecc94b; /* Galben pentru avertismente */
-  --color-info: #4299e1; /* Albastru pentru informații */
-
-  /* Definiții fonturi */
-  --font-sans: "Roboto", sans-serif; /* Font principal pentru textul curent */
-  --font-serif: "Roboto Slab", serif; /* Font serif, dacă este necesar */
-  --font-display: "Khand", sans-serif; /* Font pentru titluri mari, brand */
-
-  /* Greutăți fonturi (opțional, pot fi controlate și de Tailwind) */
   --font-weight-light: 300;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
-
-  /* Raduis pentru colțuri (opțional) */
   --border-radius-sm: 0.25rem; /* 4px */
   --border-radius-md: 0.5rem; /* 8px */
   --border-radius-lg: 0.75rem; /* 12px */
 }
 
-/* Aplică un font și o culoare de fundal de bază pentru întregul site */
+:root.dark {
+  color-scheme: dark;
+  --color-primary: #d9e2ec;
+  --color-primary-hover: #bcccdc;
+  --color-primary-soft: rgba(217, 226, 236, 0.12);
+  --color-secondary: #9fb3c8;
+  --color-secondary-hover: #bcccdc;
+  --color-secondary-soft: rgba(159, 179, 200, 0.12);
+  --color-accent: #f08c6c;
+  --color-accent-hover: #ffb199;
+  --color-accent-soft: rgba(240, 140, 108, 0.14);
+  --color-text: #d9e2ec;
+  --color-text-muted: #9fb3c8;
+  --color-text-on-primary: #102a43;
+  --color-text-on-accent: #102a43;
+  --color-background: #0b1724;
+  --color-surface: #12263a;
+  --color-surface-muted: #18314b;
+  --color-border: #334e68;
+  --color-black-alt: #f0f4f8;
+  --color-gray-light: #0b1724;
+  --color-success: #68d391;
+  --color-success-soft: rgba(104, 211, 145, 0.12);
+  --color-error: #fc8181;
+  --color-error-soft: rgba(252, 129, 129, 0.12);
+  --color-warning: #f6ad55;
+  --color-warning-soft: rgba(246, 173, 85, 0.12);
+  --color-info: #63b3ed;
+  --color-info-soft: rgba(99, 179, 237, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--color-background);
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--color-background);
-  color: var(--color-text); /* Culoarea default pentru text */
+  color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Stiluri de bază pentru titluri (opțional, pot fi suprascrise local) */
+.dark body {
+  background-color: var(--color-background);
+}
+
+/* Keep existing feature components readable while they migrate to tokens. */
+.dark [class~="bg-white"],
+.dark [class~="bg-white/70"],
+.dark [class~="bg-white/90"],
+.dark [class~="bg-white/95"] {
+  background-color: var(--color-surface);
+}
+
+.dark [class~="bg-slate-50"],
+.dark [class~="bg-gray-50"],
+.dark [class~="bg-gray-light"] {
+  background-color: #17324a;
+}
+
+.dark [class~="bg-gray-100"],
+.dark [class~="bg-slate-100"] {
+  background-color: #1d3a53;
+}
+
+.dark [class~="bg-slate-900"],
+.dark [class~="bg-gray-900"] {
+  background-color: #07111c;
+}
+
+.dark [class~="text-slate-900"],
+.dark [class~="text-slate-800"],
+.dark [class~="text-gray-900"],
+.dark [class~="text-gray-800"],
+.dark [class~="text-black"] {
+  color: #f0f4f8;
+}
+
+.dark [class~="text-slate-700"],
+.dark [class~="text-slate-600"],
+.dark [class~="text-gray-700"],
+.dark [class~="text-gray-600"] {
+  color: #bcccdc;
+}
+
+.dark [class~="text-slate-500"],
+.dark [class~="text-gray-500"],
+.dark [class~="text-gray-400"] {
+  color: #9fb3c8;
+}
+
+.dark [class~="border-slate-100"],
+.dark [class~="border-slate-200"],
+.dark [class~="border-slate-300"],
+.dark [class~="border-gray-100"],
+.dark [class~="border-gray-200"],
+.dark [class~="border-gray-300"] {
+  border-color: var(--color-border);
+}
+
+.dark [class~="bg-green-50"],
+.dark [class~="bg-green-100"],
+.dark [class~="bg-teal-50"] {
+  background-color: #173b32;
+}
+
+.dark [class~="bg-yellow-50"],
+.dark [class~="bg-yellow-100"],
+.dark [class~="bg-amber-50"] {
+  background-color: #40351d;
+}
+
+.dark [class~="bg-red-50"],
+.dark [class~="bg-red-100"] {
+  background-color: #452126;
+}
+
+.dark [class~="bg-blue-50"],
+.dark [class~="bg-blue-100"],
+.dark [class~="bg-indigo-50"] {
+  background-color: #1b365d;
+}
+
+.dark [class~="text-green-600"],
+.dark [class~="text-green-700"],
+.dark [class~="text-green-800"] {
+  color: #86efac;
+}
+
+.dark [class~="text-yellow-600"],
+.dark [class~="text-yellow-700"],
+.dark [class~="text-yellow-800"] {
+  color: #fbd38d;
+}
+
+.dark [class~="text-red-600"],
+.dark [class~="text-red-700"],
+.dark [class~="text-red-800"] {
+  color: #fca5a5;
+}
+
+.dark [class~="text-blue-600"],
+.dark [class~="text-blue-700"],
+.dark [class~="text-blue-800"] {
+  color: #93c5fd;
+}
+
+.dark [class~="border-green-100"],
+.dark [class~="border-green-200"],
+.dark [class~="border-green-400"],
+.dark [class~="border-green-500"],
+.dark [class~="border-teal-100"],
+.dark [class~="border-blue-100"],
+.dark [class~="border-blue-400"],
+.dark [class~="border-red-200"],
+.dark [class~="border-red-400"],
+.dark [class~="border-yellow-400"] {
+  border-color: #46637f;
+}
+
+.dark [class~="from-green-50"] {
+  --tw-gradient-from: #173b32 var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(23 59 50 / 0) var(--tw-gradient-to-position);
+}
+
+.dark [class~="to-teal-50"],
+.dark [class~="to-indigo-50"] {
+  --tw-gradient-to: #1b365d var(--tw-gradient-to-position);
+}
+
+.dark [class~="hover:bg-white/90"]:hover,
+.dark [class~="hover:bg-white"]:hover {
+  background-color: #1d3a53;
+}
+
+.dark [class~="hover:bg-gray-50"]:hover,
+.dark [class~="hover:bg-gray-100"]:hover,
+.dark [class~="hover:bg-slate-100"]:hover {
+  background-color: #24445f;
+}
+
+.dark input,
+.dark select,
+.dark textarea {
+  border-color: var(--color-border);
+  background-color: #102a43;
+  color: #f0f4f8;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #829ab1;
+}
+
 h1,
 h2,
 h3,
@@ -62,6 +253,76 @@ h4,
 h5,
 h6 {
   font-family: var(--font-display);
-  color: var(--color-primary); /* Sau o altă culoare specifică pentru titluri */
-  margin-bottom: 0.5em; /* Un spațiu default sub titluri */
+  color: var(--color-primary);
+}
+
+@layer components {
+  .surface-card {
+    @apply rounded-lg border border-border bg-surface shadow-sm;
+  }
+
+  .surface-panel {
+    @apply rounded-xl border border-border bg-surface-muted;
+  }
+
+  .input-shell {
+    @apply w-full rounded-lg border border-border bg-surface px-3 py-2 text-text outline-none transition;
+    &:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px var(--color-primary-soft);
+    }
+  }
+
+  .status-success {
+    border: 1px solid var(--color-success);
+    background-color: var(--color-success-soft);
+    color: var(--color-success);
+    border-radius: 0.5rem;
+    padding: 0.75rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .status-error {
+    border: 1px solid var(--color-error);
+    background-color: var(--color-error-soft);
+    color: var(--color-error);
+    border-radius: 0.5rem;
+    padding: 0.75rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .status-warning {
+    border: 1px solid var(--color-warning);
+    background-color: var(--color-warning-soft);
+    color: var(--color-warning);
+    border-radius: 0.5rem;
+    padding: 0.75rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .status-info {
+    border: 1px solid var(--color-info);
+    background-color: var(--color-info-soft);
+    color: var(--color-info);
+    border-radius: 0.5rem;
+    padding: 0.75rem 0.875rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+}
+
+a,
+button,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-accent) 65%, white);
+  outline-offset: 3px;
 }

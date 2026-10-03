@@ -1,5 +1,4 @@
 // src/pages/api/players/[id].ts
-import { supabase } from "../../../lib/supabase";
 import { playerService } from "../../../services/playersService"; // Adjust path
 import type { APIRoute, APIContext } from "astro";
 
@@ -48,12 +47,26 @@ export const PUT: APIRoute = async ({
 
   if (!user || !profile) return jsonError("Not authenticated", 401);
   if (!id) return jsonError("Player ID is required in URL path", 400);
-
-  // Orice user autentificat poate actualiza jucători
-  // (nu avem check de rol pentru update, doar pentru delete care e mai restrictiv)
+  if (profile.user_role !== "admin" && profile.user_role !== "moderator") {
+    return jsonError("Unauthorized to update player", 403);
+  }
 
   try {
-    const updates = await request.json();
+    const body = await request.json();
+    const editableFields = [
+      "full_name",
+      "email",
+      "phone",
+      "birthdate",
+      "grade",
+      "position",
+    ] as const;
+    const updates = Object.fromEntries(
+      editableFields
+        .filter((field) => Object.prototype.hasOwnProperty.call(body, field))
+        .map((field) => [field, body[field]]),
+    );
+
     if (Object.keys(updates).length === 0) {
       return jsonError("No update data provided", 400);
     }

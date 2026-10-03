@@ -11,6 +11,7 @@ if (!accessToken?.value || !refreshToken?.value) {
 }
 
 const { supabase } = await import("../lib/supabase");
+const { profile } = Astro.locals;
 
 const { data: sessionData, error: sessionError } =
   await supabase.auth.setSession({
@@ -28,6 +29,6 @@ if (sessionError || !sessionData?.user) {
 <Layout title="Players">
   <div class="min-h-screen p-6">
     <h1 class="text-3xl font-bold mb-4 text-center">Jucători înregistrați</h1>
-    <PlayerList client:load />
+    <PlayerList client:load userRole={profile?.user_role ?? "guest"} />
   </div>
 </Layout>

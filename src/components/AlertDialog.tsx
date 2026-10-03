@@ -30,34 +30,28 @@ export const AlertDialog: React.FC<ConfirmDialogProps> = ({
   return (
     // Fundal semi-transparent
     <div
-      className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center z-50 font-inter"
-      onClick={onClose} // Închide la click pe fundal
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 font-inter"
+      onClick={onClose}
     >
-      {/* Containerul dialogului */}
       <div
-        className="bg-white rounded-lg shadow-xl p-6 max-w-sm mx-auto"
-        onClick={(e) => e.stopPropagation()} // Oprește închiderea la click pe dialog
+        className="mx-auto max-w-sm rounded-lg bg-surface p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Titlu */}
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+        <h3 className="mb-4 text-lg font-semibold text-primary">{title}</h3>
 
-        {/* Mesaj */}
-        <p className="text-sm text-gray-700 mb-6">{message}</p>
+        <p className="mb-6 text-sm text-text">{message}</p>
 
-        {/* Butoane */}
         <div className="flex justify-end space-x-3">
-          {/* Buton Anulare */}
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-colors duration-200"
+            className="rounded-md bg-surface-muted px-4 py-2 text-sm font-medium text-text transition hover:bg-[var(--color-border)] focus:outline-none focus:ring-2 focus:ring-primary"
           >
             {cancelText}
           </button>
 
-          {/* Buton Confirmare (cu stil de "pericol") */}
           <button
             onClick={onConfirm}
-            className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition-colors duration-200"
+            className="rounded-md bg-error px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-error)] focus:outline-none focus:ring-2 focus:ring-error"
           >
             {confirmText}
           </button>

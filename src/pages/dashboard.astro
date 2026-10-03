@@ -1,6 +1,5 @@
 ---
 import Layout from "../layouts/Layout.astro";
-export const prerender = false;
 
 const accessToken = Astro.cookies.get("sb-access-token");
 const refreshToken = Astro.cookies.get("sb-refresh-token");
@@ -13,7 +12,7 @@ const { data, error } = await import("../lib/supabase").then(({ supabase }) =>
   supabase.auth.setSession({
     access_token: accessToken.value,
     refresh_token: refreshToken.value,
-  })
+  }),
 );
 
 if (error || !data?.user) {
@@ -23,22 +22,79 @@ if (error || !data?.user) {
 }
 
 const email = data.user.email;
+const displayName = email?.split("@")[0] || "utilizator";
 ---
 
 <Layout title="Dashboard">
-  <div
-    class="min-h-screen flex flex-col justify-center items-center p-4 text-center"
+  <main
+    class="min-h-screen bg-[var(--color-background)] px-4 py-10 md:px-6 lg:px-8"
   >
-    <h1 class="text-3xl font-bold text-primary mb-2">Welcome, {email}</h1>
-    <p class="text-gray-600 mb-6">We're happy to see you here!</p>
+    <section
+      class="mx-auto flex max-w-5xl flex-col gap-8 rounded-3xl border border-slate-200 bg-white p-7 shadow-sm md:p-10"
+    >
+      <div class="max-w-2xl">
+        <p
+          class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500"
+        >
+          Panoul tău de meci
+        </p>
+        <h1 class="mt-3 text-3xl font-bold text-slate-900 sm:text-4xl">
+          Bine ai revenit, {displayName}!
+        </h1>
+        <p class="mt-4 text-lg leading-8 text-slate-600">
+          De aici vezi ce trebuie făcut mai întâi și ajungi rapid la acțiunile
+          principale.
+        </p>
+      </div>
 
-    <form action="/api/auth/signout" method="get">
-      <button
-        type="submit"
-        class="px-6 py-2 bg-accent text-primary font-semibold rounded hover:bg-opacity-80 transition"
+      <div class="grid gap-4 md:grid-cols-3" aria-label="Acțiuni principale">
+        <a
+          href="/genereaza"
+          class="rounded-2xl border border-[var(--color-primary)] bg-[var(--color-primary)] p-5 text-white transition hover:bg-[var(--color-primary-hover)]"
+        >
+          <h2 class="font-semibold">Generează echipe</h2>
+          <p class="mt-2 text-sm text-slate-300">
+            Pornește un nou setup pentru meciul de azi.
+          </p>
+        </a>
+        <a
+          href="/confirmari"
+          class="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-slate-800 transition hover:border-slate-300 hover:bg-white"
+        >
+          <h2 class="font-semibold">Confirmări</h2>
+          <p class="mt-2 text-sm text-slate-600">
+            Urmărește cine este prezent și cine a confirmat.
+          </p>
+        </a>
+        <a
+          href="/statistici"
+          class="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-slate-800 transition hover:border-slate-300 hover:bg-white"
+        >
+          <h2 class="font-semibold">Statistici</h2>
+          <p class="mt-2 text-sm text-slate-600">
+            Vezi progresul și evoluția echipei.
+          </p>
+        </a>
+      </div>
+
+      <div
+        class="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4"
       >
-        Sign out
-      </button>
-    </form>
-  </div>
+        <a
+          href="/profil"
+          class="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+        >
+          Profil
+        </a>
+        <form action="/api/auth/signout" method="get">
+          <button
+            type="submit"
+            class="rounded-full border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+          >
+            Deconectează-te
+          </button>
+        </form>
+      </div>
+    </section>
+  </main>
 </Layout>

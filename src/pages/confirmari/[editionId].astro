@@ -1,9 +1,12 @@
 ---
 import ConfirmariList from "../../components/confirmari/ConfirmariList.tsx";
 import Layout from "../../layouts/Layout.astro";
+import { getLatestEditionNumber } from "../../services/confirmariService";
 
 // Get the editionId from the URL parameters
 const { editionId } = Astro.params;
+const initialEditionId =
+  editionId ?? String((await getLatestEditionNumber()) ?? "");
 
 // You might want to add validation for editionId here (e.g., check if it's a number)
 // For simplicity, we'll pass it as is to the React component.
@@ -24,6 +27,10 @@ const { editionId } = Astro.params;
       We pass the editionId from Astro.params to the React component.
     */
     }
-    <ConfirmariList client:load initialEditionId={editionId} />
+    <ConfirmariList
+      client:idle
+      initialEditionId={initialEditionId}
+      canAddPlayer={Astro.locals.profile?.user_role === "admin"}
+    />
   </main>
 </Layout>

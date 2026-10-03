@@ -7,6 +7,9 @@ export interface Player {
   birthdate?: string;
   grade: number;
   created_at?: string;
+  updated_at?: string;
+  nota_updated_at?: string;
+  flagged?: boolean;
   position: PlayerField;
   totalEditions: number;
 }

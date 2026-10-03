@@ -19,7 +19,7 @@ export function useUserProfile() {
       });
   }, []);
 
-  const userRole: UserRole = profile?.user_role;
+  const userRole: UserRole | undefined = profile?.user_role;
 
   return { profile, loading, userRole };
 }

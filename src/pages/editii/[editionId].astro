@@ -24,9 +24,9 @@ export async function getStaticPaths() {
   // Aici trebuie să apelați scriptul de listare (cel rapid) pentru a obține toate ID-urile valide.
   // Presupunând că scriptul de listare este deja configurat:
   const listRes = await fetch(
-    "https://script.google.com/macros/s/AKfycbzRrCwb7y1aW1x88DedUlU4GwXUn84Ahl8mumn0bL-DbAPx0rQACoz7a62RPIsCxla4/exec"
+    "https://script.google.com/macros/s/AKfycbzRrCwb7y1aW1x88DedUlU4GwXUn84Ahl8mumn0bL-DbAPx0rQACoz7a62RPIsCxla4/exec",
   );
-  const editionsList = await listRes.json();
+  const editionsList = (await listRes.json()) as Array<{ id: string | number }>;
 
   return editionsList.map((ed) => ({
     params: { editionId: String(ed.id) }, // Returnează lista de ID-uri ca string-uri

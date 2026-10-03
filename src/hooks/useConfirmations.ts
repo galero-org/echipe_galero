@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import type { Registration, Player } from "../lib/types";
 
 interface UseConfirmationsReturn {
@@ -28,6 +28,7 @@ export const useConfirmations = (): UseConfirmationsReturn => {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null); // Ordinea Statusurilor
+  const registrationsCacheRef = useRef<Map<number, Registration[]>>(new Map());
 
   const statusOrder = { inscris: 1, rezerva: 2, retras: 3 };
 
@@ -58,6 +59,15 @@ export const useConfirmations = (): UseConfirmationsReturn => {
         setLoading(false);
         return;
       }
+
+      const cachedRegistrations = registrationsCacheRef.current.get(editionId);
+      if (cachedRegistrations) {
+        setRegistrations(cachedRegistrations);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
       try {
@@ -67,7 +77,9 @@ export const useConfirmations = (): UseConfirmationsReturn => {
             `Eroare API la preluarea confirmărilor: ${res.statusText}`,
           );
         const data = await res.json();
-        setRegistrations(sortRegistrations(data));
+        const sortedRegistrations = sortRegistrations(data);
+        registrationsCacheRef.current.set(editionId, sortedRegistrations);
+        setRegistrations(sortedRegistrations);
       } catch (err) {
         console.error("Eroare la preluarea confirmărilor:", err);
         const message =
@@ -111,7 +123,15 @@ export const useConfirmations = (): UseConfirmationsReturn => {
 
       // Ensure we have the complete registration with players data
       if (addedReg && addedReg.id) {
-        setRegistrations((prev) => sortRegistrations([...prev, addedReg]));
+        const updatedRegistrations = sortRegistrations([
+          ...(registrationsCacheRef.current.get(newRegData.numar_editie) ?? []),
+          addedReg,
+        ]);
+        registrationsCacheRef.current.set(
+          newRegData.numar_editie,
+          updatedRegistrations,
+        );
+        setRegistrations(updatedRegistrations);
       }
 
       return addedReg;
@@ -143,13 +163,27 @@ export const useConfirmations = (): UseConfirmationsReturn => {
         throw new Error(
           `Eroare API la actualizarea statusului: ${res.statusText}`,
         );
-      setRegistrations((prev) =>
-        sortRegistrations(
-          prev.map((r) =>
-            r.id === id ? { ...r, status, registered_at: newRegisteredAt } : r,
+      const currentEditionId = registrationsCacheRef.current
+        ? Array.from(registrationsCacheRef.current.entries()).find(
+            ([, value]) => value.some((registration) => registration.id === id),
+          )?.[0]
+        : undefined;
+
+      if (typeof currentEditionId === "number") {
+        const updatedRegistrations = sortRegistrations(
+          (registrationsCacheRef.current.get(currentEditionId) ?? []).map(
+            (r) =>
+              r.id === id
+                ? { ...r, status, registered_at: newRegisteredAt }
+                : r,
           ),
-        ),
-      );
+        );
+        registrationsCacheRef.current.set(
+          currentEditionId,
+          updatedRegistrations,
+        );
+        setRegistrations(updatedRegistrations);
+      }
     } catch (err) {
       console.error("Eroare la actualizarea statusului:", err);
       const message =
@@ -173,11 +207,24 @@ export const useConfirmations = (): UseConfirmationsReturn => {
       });
       if (!res.ok)
         throw new Error(`Eroare API la actualizarea plății: ${res.statusText}`);
-      setRegistrations((prev) =>
-        sortRegistrations(
-          prev.map((r) => (r.id === id ? { ...r, payment } : r)),
-        ),
-      );
+      const currentEditionId = registrationsCacheRef.current
+        ? Array.from(registrationsCacheRef.current.entries()).find(
+            ([, value]) => value.some((registration) => registration.id === id),
+          )?.[0]
+        : undefined;
+
+      if (typeof currentEditionId === "number") {
+        const updatedRegistrations = sortRegistrations(
+          (registrationsCacheRef.current.get(currentEditionId) ?? []).map(
+            (r) => (r.id === id ? { ...r, payment } : r),
+          ),
+        );
+        registrationsCacheRef.current.set(
+          currentEditionId,
+          updatedRegistrations,
+        );
+        setRegistrations(updatedRegistrations);
+      }
     } catch (err) {
       console.error("Eroare la actualizarea plății:", err);
       const message =
@@ -201,9 +248,24 @@ export const useConfirmations = (): UseConfirmationsReturn => {
         throw new Error(
           `Eroare API la ștergerea confirmării: ${res.statusText}`,
         );
-      setRegistrations((prev) =>
-        sortRegistrations(prev.filter((r) => r.id !== id)),
-      );
+      const currentEditionId = registrationsCacheRef.current
+        ? Array.from(registrationsCacheRef.current.entries()).find(
+            ([, value]) => value.some((registration) => registration.id === id),
+          )?.[0]
+        : undefined;
+
+      if (typeof currentEditionId === "number") {
+        const updatedRegistrations = sortRegistrations(
+          (registrationsCacheRef.current.get(currentEditionId) ?? []).filter(
+            (r) => r.id !== id,
+          ),
+        );
+        registrationsCacheRef.current.set(
+          currentEditionId,
+          updatedRegistrations,
+        );
+        setRegistrations(updatedRegistrations);
+      }
     } catch (err) {
       console.error("Eroare la ștergerea confirmării:", err);
       const message =

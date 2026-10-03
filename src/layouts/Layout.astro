@@ -1,27 +1,43 @@
 ---
 import Navbar from "../components/Navbar";
+import "../styles/global.css";
 
 const { profile } = Astro.locals;
+const { title = "Galero Cup" } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="ro">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <link rel="icon" type="image/svg+xml" href="/galero.svg" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Galero" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="generator" content={Astro.generator} />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Galero Cup</title>
+    <title>{title} | Galero Cup</title>
+    <script is:inline>
+      const preference = localStorage.getItem("galero-theme");
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (preference === "dark" || (!preference && prefersDark)) {
+        document.documentElement.classList.add("dark");
+      }
+    </script>
   </head>
   <body>
     <Navbar client:load profile={profile} />
 
     <slot />
-    <script type="module">
-      import { registerSW } from 'virtual:pwa-register';
-      registerSW({ immediate: true });
-    </script>
   </body>
 
   <style>
@@ -33,13 +49,20 @@ const { profile } = Astro.locals;
     }
   </style>
 
-  <footer class="text-center mt-12 md:mt-16 py-6 border-t border-slate-700">
-    <p class="text-sm text-gray-400">
+  <footer
+    class="mt-12 border-t border-slate-200 bg-white px-4 py-8 text-center transition-colors md:mt-16"
+  >
+    <p class="text-sm text-slate-500">
       &copy; {new Date().getFullYear()} Galero Football Iași. Toate drepturile rezervate.
     </p>
-    <p class="text-xs text-gray-500 mt-1">
+    <p class="mt-1 text-xs text-slate-400">
       Construit cu{" "}
-      <a href="https://astro.build/" target="_blank" class="hover:text-sky-300">
+      <a
+        href="https://astro.build/"
+        target="_blank"
+        rel="noreferrer"
+        class="hover:text-slate-700"
+      >
         Astro
       </a>{" "}
       și pasiune pentru fotbal.

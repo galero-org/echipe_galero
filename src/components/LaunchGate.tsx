@@ -23,13 +23,13 @@ const LaunchGate: React.FC<LaunchGateProps> = ({ targetDate, children }) => {
 
       const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
       const hours = Math.floor(
-        (timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+        (timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
       );
       const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
 
       setRemainingTime(
-        `${days} zile, ${hours} ore, ${minutes} minute, ${seconds} secunde`
+        `${days} zile, ${hours} ore, ${minutes} minute, ${seconds} secunde`,
       );
 
       setIsReady(false);
@@ -46,19 +46,19 @@ const LaunchGate: React.FC<LaunchGateProps> = ({ targetDate, children }) => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center p-4">
-      <h1 className="text-3xl md:text-5xl font-bold mb-4 text-blue-600">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[var(--color-background)] p-4 text-center">
+      <h1 className="mb-4 text-3xl font-bold text-primary md:text-5xl">
         În curând...
       </h1>
-      <p className="text-lg text-gray-700 mb-8 max-w-xl">
+      <p className="mb-8 max-w-xl text-lg text-text">
         Clasamentul va fi publicat pe
-        <strong className="text-blue-600">
+        <strong className="text-primary">
           {" "}
           13 iulie 2025, ora 17:00 (ora României)
         </strong>
         .
       </p>
-      <div className="text-2xl md:text-4xl font-mono text-gray-800 bg-white p-4 rounded-lg shadow-md">
+      <div className="rounded-lg bg-surface p-4 font-mono text-2xl text-primary shadow-md md:text-4xl">
         {remainingTime}
       </div>
     </div>

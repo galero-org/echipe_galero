@@ -2,49 +2,31 @@
 import Layout from "../layouts/Layout.astro";
 import { supabase } from "../lib/supabase";
 import TeamOrchestrator from "../components/TeamOrchestrator";
-import { getPlayersRegistrations } from "../services/confirmariService";
-// Importă funcția pentru a obține prezențele jucătorilor
+import { getAllPlayersPresenceCounts } from "../services/confirmariService";
 
-export const prerender = false;
+// --- Preluare Jucători, Ediții, Prezențe, Înregistrări în paralel ---
+const [
+  { data: allPlayers, error: playersError },
+  { data: editions },
+  { presenceMap },
+] = await Promise.all([
+  supabase.from("players").select("*"),
+  supabase
+    .from("editions")
+    .select("id, numar_editie")
+    .order("numar_editie", { ascending: false }),
+  getAllPlayersPresenceCounts(),
+]);
 
-// --- Verificare Autentificare ---
-const accessToken = Astro.cookies.get("sb-access-token");
-const refreshToken = Astro.cookies.get("sb-refresh-token");
-
-if (!accessToken?.value || !refreshToken?.value) {
-  return Astro.redirect("/signin");
-}
-
-const { data: sessionData, error: sessionError } =
-  await supabase.auth.setSession({
-    access_token: accessToken.value,
-    refresh_token: refreshToken.value,
-  });
-
-if (sessionError || !sessionData?.user) {
-  Astro.cookies.delete("sb-access-token", { path: "/" });
-  Astro.cookies.delete("sb-refresh-token", { path: "/" });
-  return Astro.redirect("/signin");
-}
-
-// --- Preluare Jucători ---
-const { data: allPlayers, error } = await supabase.from("players").select("*");
-if (error) {
-  console.error("Error fetching players:", error.message);
+if (playersError) {
+  console.error("Error fetching players:", playersError.message);
   return Astro.redirect("/error-page");
 }
-
-// --- Preluare Ediții ---
-const { data: editions, error: editionsError } = await supabase
-  .from("editions")
-  .select("id, numar_editie")
-  .order("numar_editie", { ascending: false });
 
 const lastEdition = editions && editions.length > 0 ? editions[0] : null;
 const numarEditie: number = lastEdition?.numar_editie ?? 0;
 const editionId: string = lastEdition?.id ?? "";
 
-// --- Preluare Înregistrări pentru Ultima Ediție ---
 const { data: registrations, error: regError } = await supabase
   .from("registrations")
   .select("player_id")
@@ -58,38 +40,19 @@ if (regError) {
 
 const registeredPlayerIds = registrations.map((r) => r.player_id);
 
-// --- Adăugare Număr de Prezențe pentru Fiecare Jucător ---
-// Creăm o listă de promisiuni pentru fiecare apel getPlayersRegistrations
-const playersWithPresencePromises = allPlayers.map(async (player) => {
-  const { totalEditions, error: presenceError } = await getPlayersRegistrations(
-    player.full_name,
-  );
-  if (presenceError) {
-    console.error(
-      `Eroare la preluarea prezențelor pentru ${player.full_name}:`,
-      presenceError,
-    );
-    // În caz de eroare, setăm prezența la 0 sau o valoare implicită
-    return { ...player, totalEditions: 0 };
-  }
-  return { ...player, totalEditions: totalEditions };
-});
-
-// Așteptăm ca toate promisiunile să se rezolve
-const allPlayersWithPresence = await Promise.all(playersWithPresencePromises);
-
-// Aici vom folosi allPlayersWithPresence în loc de allPlayers original
+const allPlayersWithPresence = (allPlayers ?? []).map((player) => ({
+  ...player,
+  totalEditions: presenceMap.get(player.id) ?? 0,
+}));
 ---
 
 <Layout title="Generare Echipe Echilibrate">
   <div class="p-6 max-w-screen-xl mx-auto">
-    <h1 class="text-3xl font-bold mb-8 text-center">
-      ⚽ Generează Echipe de Fotbal ⚽
-    </h1>
+    <h1 class="text-3xl font-bold mb-8 text-center">Generează Echipe</h1>
     {
       allPlayersWithPresence && allPlayersWithPresence.length > 0 ? (
         <TeamOrchestrator
-          client:load
+          client:idle
           allPlayers={allPlayersWithPresence}
           registeredPlayerIds={registeredPlayerIds}
           edition_id={editionId}

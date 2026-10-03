@@ -1,7 +1,8 @@
 import type { APIRoute } from "astro";
-import { supabase } from "../../../lib/supabase";
 import type { Provider } from "@supabase/supabase-js";
-export const prerender = false;
+
+import { supabase } from "../../../lib/supabase";
+import { writeAuthCookies } from "../../../lib/auth/session";
 
 export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const formData = await request.formData();
@@ -10,27 +11,26 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   const provider = formData.get("provider")?.toString();
   const redirectTo = import.meta.env.PUBLIC_SUPABASE_REDIRECT;
 
-  console.log(redirectTo);
-
-  const validProviders = ["google", "github", "discord"];
+  const validProviders = ["google"];
 
   if (provider && validProviders.includes(provider)) {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: provider as Provider,
       options: {
-        redirectTo: redirectTo,
+        redirectTo,
       },
     });
 
     if (error) {
-      return new Response(error.message, { status: 500 });
+      console.error("[SignIn] OAuth error:", error.message);
+      return redirect("/signin?error=oauth_failed");
     }
 
     return redirect(data.url);
   }
 
   if (!email || !password) {
-    return new Response("Email and password are required", { status: 400 });
+    return redirect("/signin?error=missing_credentials");
   }
 
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -39,15 +39,16 @@ export const POST: APIRoute = async ({ request, cookies, redirect }) => {
   });
 
   if (error) {
-    return new Response(error.message, { status: 500 });
+    console.error("[SignIn] Password sign-in error:", error.message);
+    return redirect("/signin?error=invalid_credentials");
   }
 
   const { access_token, refresh_token } = data.session;
-  cookies.set("sb-access-token", access_token, {
-    path: "/",
+
+  writeAuthCookies(cookies, {
+    accessToken: access_token,
+    refreshToken: refresh_token,
   });
-  cookies.set("sb-refresh-token", refresh_token, {
-    path: "/",
-  });
+
   return redirect("/profil");
 };

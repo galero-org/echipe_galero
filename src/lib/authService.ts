@@ -1,6 +1,6 @@
 // src/lib/authService.ts
 import { supabase } from "./supabase"; // Ajustează calea
-import type { User as SupabaseUser, User } from "@supabase/supabase-js";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 import type { UserProfile } from "./types"; // Tipul tău UserProfile
 
 // Extindem tipul de bază al utilizatorului Supabase

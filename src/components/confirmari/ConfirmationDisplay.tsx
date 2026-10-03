@@ -7,7 +7,7 @@ interface ConfirmationsDisplayProps {
   registrations: Registration[];
   onUpdateStatus: (
     id: string,
-    status: "inscris" | "rezerva" | "retras"
+    status: "inscris" | "rezerva" | "retras",
   ) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }
@@ -17,7 +17,7 @@ function buildWhatsappMessage(
   rezerve: Registration[],
   retrasi: Registration[],
   editionNumber: number,
-  location: string
+  location: string,
 ): string {
   let message = `📋 Prezență pentru ediția ${editionNumber} - ${location}:\n`;
 
@@ -65,7 +65,6 @@ export const ConfirmationsDisplay: React.FC<ConfirmationsDisplayProps> = ({
   onDelete,
 }) => {
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
-
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const dateFormatter = useMemo(
@@ -78,14 +77,14 @@ export const ConfirmationsDisplay: React.FC<ConfirmationsDisplayProps> = ({
         day: "2-digit",
         month: "short",
       }),
-    []
+    [],
   );
 
   const { inscrisi, rezerve, retrasi } = useMemo(() => {
     const sorted = [...registrations].sort(
       (a, b) =>
         new Date(a.registered_at).getTime() -
-        new Date(b.registered_at).getTime()
+        new Date(b.registered_at).getTime(),
     );
     return {
       inscrisi: sorted.filter((r) => r.status === "inscris"),
@@ -105,7 +104,7 @@ export const ConfirmationsDisplay: React.FC<ConfirmationsDisplayProps> = ({
       rezerve,
       retrasi,
       editionNumber,
-      location
+      location,
     );
     navigator.clipboard.writeText(msg).then(() => {
       showToast("📋 Mesajul a fost copiat!"); // Am înlocuit alert()
@@ -128,7 +127,7 @@ export const ConfirmationsDisplay: React.FC<ConfirmationsDisplayProps> = ({
   const renderRegistrationRow = (
     reg: Registration,
     index: number,
-    listType: "inscris" | "rezerva" | "retras"
+    listType: "inscris" | "rezerva" | "retras",
   ) => {
     const displayIndex =
       listType === "inscris"
@@ -150,7 +149,7 @@ export const ConfirmationsDisplay: React.FC<ConfirmationsDisplayProps> = ({
           <div className="relative inline-block">
             <span
               className={`px-3 py-1 rounded-full text-xs font-semibold cursor-pointer select-none transition-colors duration-200 ${getStatusColor(
-                reg.status
+                reg.status,
               )}`}
               onClick={() =>
                 setActiveDropdownId(activeDropdownId === reg.id ? null : reg.id)
@@ -216,25 +215,44 @@ export const ConfirmationsDisplay: React.FC<ConfirmationsDisplayProps> = ({
     );
   }
 
-  // 🔹 Structura principală a componentei
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 font-inter">
-      {/* Notificarea Toast */}
       {toastMessage && (
         <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
       )}
 
-      {/* Butonul de copiere mesaj WhatsApp */}
-      <div className="flex justify-end p-4 border-b border-gray-200">
-        <button
-          onClick={handleCopyWhatsapp}
-          className="bg-green-500 text-white px-4 py-2 rounded-lg shadow hover:bg-green-600 transition-colors"
-        >
-          Copy WhatsApp message
-        </button>
+      <div className="flex flex-col gap-3 p-4 border-b border-gray-200 lg:flex-row lg:items-center lg:justify-between">
+        <div className="grid gap-3 sm:grid-cols-3 flex-1">
+          <div className="rounded-lg border border-green-100 bg-green-50 p-3">
+            <p className="text-sm text-green-700">Înscriși</p>
+            <p className="text-xl font-semibold text-green-800">
+              {inscrisi.length}
+            </p>
+          </div>
+          <div className="rounded-lg border border-yellow-100 bg-yellow-50 p-3">
+            <p className="text-sm text-yellow-700">Rezerve</p>
+            <p className="text-xl font-semibold text-yellow-800">
+              {rezerve.length}
+            </p>
+          </div>
+          <div className="rounded-lg border border-red-100 bg-red-50 p-3">
+            <p className="text-sm text-red-700">Retrasi</p>
+            <p className="text-xl font-semibold text-red-800">
+              {retrasi.length}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={handleCopyWhatsapp}
+            className="bg-green-500 text-white px-4 py-2 rounded-lg shadow hover:bg-green-600 transition-colors"
+          >
+            Copiază mesaj WhatsApp
+          </button>
+        </div>
       </div>
 
-      {/* 1. Lista Înscriși */}
       <section className="p-4">
         <h3 className="text-xl font-semibold text-green-700 mb-2">
           Înscriși ({inscrisi.length})
@@ -255,7 +273,7 @@ export const ConfirmationsDisplay: React.FC<ConfirmationsDisplayProps> = ({
             </thead>
             <tbody>
               {inscrisi.map((reg, index) =>
-                renderRegistrationRow(reg, index, "inscris")
+                renderRegistrationRow(reg, index, "inscris"),
               )}
             </tbody>
           </table>
@@ -287,7 +305,7 @@ export const ConfirmationsDisplay: React.FC<ConfirmationsDisplayProps> = ({
               </thead>
               <tbody>
                 {rezerve.map((reg, index) =>
-                  renderRegistrationRow(reg, index, "rezerva")
+                  renderRegistrationRow(reg, index, "rezerva"),
                 )}
               </tbody>
             </table>
@@ -319,7 +337,7 @@ export const ConfirmationsDisplay: React.FC<ConfirmationsDisplayProps> = ({
               </thead>
               <tbody>
                 {retrasi.map((reg, index) =>
-                  renderRegistrationRow(reg, index, "retras")
+                  renderRegistrationRow(reg, index, "retras"),
                 )}
               </tbody>
             </table>

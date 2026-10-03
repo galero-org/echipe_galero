@@ -7,12 +7,21 @@ interface UsePlayersSimpleListReturn {
   error: string | null;
 }
 
+const playersCacheRef = { current: null as Player[] | null };
+
 export const usePlayersSimpleList = (): UsePlayersSimpleListReturn => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (playersCacheRef.current) {
+      setPlayers(playersCacheRef.current);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     const fetchPlayersData = async () => {
       setLoading(true);
       setError(null);
@@ -20,6 +29,7 @@ export const usePlayersSimpleList = (): UsePlayersSimpleListReturn => {
         const res = await fetch("/api/players");
         if (!res.ok) throw new Error(`Eroare API: ${res.statusText}`);
         const data = await res.json();
+        playersCacheRef.current = data;
         setPlayers(data);
       } catch (err) {
         console.error("Eroare la preluarea jucătorilor:", err);

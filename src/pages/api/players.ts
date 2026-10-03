@@ -1,4 +1,8 @@
 import { playerService } from "../../services/playersService";
+import {
+  getAllPlayersPresenceCounts,
+  getPlayersWithoutRecentPresence,
+} from "../../services/confirmariService";
 import type { APIRoute, APIContext } from "astro";
 
 function jsonError(message: string, status: number) {
@@ -21,7 +25,28 @@ export const GET: APIRoute = async ({ locals }: APIContext) => {
   }
 
   try {
-    const data = await playerService.getAll(profile.user_role);
+    let data = await playerService.getAll(profile.user_role);
+    const { presenceMap, error: presenceError } =
+      await getAllPlayersPresenceCounts();
+    if (presenceError) throw presenceError;
+
+    data = data.map((player) => ({
+      ...player,
+      totalEditions: presenceMap.get(player.id) || 0,
+    }));
+
+    if (profile.user_role === "admin") {
+      const { players: stalePlayers, error } =
+        await getPlayersWithoutRecentPresence(90);
+      if (error) throw error;
+
+      const staleIds = new Set(stalePlayers.map((player) => player.id));
+      data = data.map((player) => ({
+        ...player,
+        flagged: player.flagged || staleIds.has(player.id),
+      }));
+    }
+
     return new Response(JSON.stringify(data), {
       headers: { "Content-Type": "application/json" },
     });

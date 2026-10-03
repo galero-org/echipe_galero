@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 
-import type { User as SupabaseAuthUser } from "@supabase/supabase-js";
+import type { ManagedUser, UserRole } from "../../../lib/types";
 
-interface DisplayUser extends SupabaseAuthUser {
-  app_role?: string;
-}
 interface EditUserModalProps {
-  user: DisplayUser;
+  user: ManagedUser;
   onClose: () => void;
-  onSave: (userId: string, newRole: string) => void;
+  onSave: (userId: string, newRole: UserRole) => void;
 }
 
 const EditUserModal: React.FC<EditUserModalProps> = ({
@@ -16,7 +13,7 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const [role, setRole] = useState(user.app_role);
+  const [role, setRole] = useState<UserRole>(user.app_role);
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,34 +37,34 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        className="bg-background p-6 rounded-lg shadow-xl w-full max-w-md"
+        className="w-full max-w-md rounded-lg bg-surface p-6 shadow-xl"
         ref={modalRef}
         tabIndex={-1}
         role="dialog"
         aria-modal="true"
       >
-        <h2 className="text-xl font-bold mb-4">
+        <h2 className="mb-4 text-xl font-bold text-primary">
           Modifică Rol pentru {user.email}
         </h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label
               htmlFor="role"
-              className="block text-sm font-medium text-text-muted mb-1"
+              className="mb-1 block text-sm font-medium text-muted"
             >
               Rol
             </label>
             <select
               id="role"
               value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full p-2 border border-border rounded-md bg-surface"
+              onChange={(e) => setRole(e.target.value as UserRole)}
+              className="input-shell w-full p-2"
             >
               <option value="user">User</option>
               <option value="moderator">Moderator</option>
@@ -78,13 +75,13 @@ const EditUserModal: React.FC<EditUserModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-md bg-gray-light"
+              className="rounded-md bg-[var(--color-surface-muted)] px-4 py-2 text-text transition hover:bg-[var(--color-border)]"
             >
               Anulează
             </button>
             <button
               type="submit"
-              className="px-4 py-2 rounded-md bg-primary text-white"
+              className="rounded-md bg-primary px-4 py-2 text-on-primary transition hover:bg-primary-hover"
             >
               Salvează
             </button>
