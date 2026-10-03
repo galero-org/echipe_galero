@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import type { Player, Team, PlayerPreferences } from "../lib/types";
 import PlayerSelectionAndConfig from "./players/PlayerSelectionAndConfig";
 import GeneratedTeamsDisplay from "./GenerateTeamsDisplay";
