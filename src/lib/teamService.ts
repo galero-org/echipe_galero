@@ -114,7 +114,10 @@ function createTeamBalanceTargets(
   return {
     grade: grades.reduce((sum, grade) => sum + grade, 0) / teamCount,
     presence: presences.reduce((sum, count) => sum + count, 0) / teamCount,
-    gradeScale: Math.max(1, (Math.max(...grades) - Math.min(...grades)) * playersPerTeam),
+    gradeScale: Math.max(
+      1,
+      (Math.max(...grades) - Math.min(...grades)) * playersPerTeam,
+    ),
     presenceScale: Math.max(
       1,
       (Math.max(...presences) - Math.min(...presences)) * playersPerTeam,
@@ -131,7 +134,8 @@ function getPlacementCost(
   const gradeAfter =
     (team.totalGrade + player.grade - targets.grade) / targets.gradeScale;
   const presenceBefore =
-    ((team.totalEditionsPlayed ?? 0) - targets.presence) / targets.presenceScale;
+    ((team.totalEditionsPlayed ?? 0) - targets.presence) /
+    targets.presenceScale;
   const presenceAfter =
     ((team.totalEditionsPlayed ?? 0) +
       getPresenceCount(player) -
@@ -306,22 +310,19 @@ export function generateTeams(
       (draftScores.get(right.id) ?? 0) - (draftScores.get(left.id) ?? 0),
   );
   const goalkeeperQueue = sortedGoalkeepers.slice(0, teamCount);
-  const fieldSlots = Math.max(
-    0,
-    totalPlayersNeeded - goalkeeperQueue.length,
-  );
-  const playerQueue = [...fieldPlayers].sort(
-      (left, right) => {
-        const leftSeparationCount = separationMap.get(left.id)?.size ?? 0;
-        const rightSeparationCount = separationMap.get(right.id)?.size ?? 0;
-        return (
-          rightSeparationCount - leftSeparationCount ||
-          (draftScores.get(right.id) ?? 0) - (draftScores.get(left.id) ?? 0) ||
-          right.grade - left.grade ||
-          getPresenceCount(right) - getPresenceCount(left)
-        );
-      },
-  ).slice(0, fieldSlots);
+  const fieldSlots = Math.max(0, totalPlayersNeeded - goalkeeperQueue.length);
+  const playerQueue = [...fieldPlayers]
+    .sort((left, right) => {
+      const leftSeparationCount = separationMap.get(left.id)?.size ?? 0;
+      const rightSeparationCount = separationMap.get(right.id)?.size ?? 0;
+      return (
+        rightSeparationCount - leftSeparationCount ||
+        (draftScores.get(right.id) ?? 0) - (draftScores.get(left.id) ?? 0) ||
+        right.grade - left.grade ||
+        getPresenceCount(right) - getPresenceCount(left)
+      );
+    })
+    .slice(0, fieldSlots);
   const balanceTargets = createTeamBalanceTargets(
     [...goalkeeperQueue, ...playerQueue],
     teamCount,
@@ -367,12 +368,7 @@ export function generateTeams(
     if (availableTeams.length === 0) break;
 
     const teamsRespectingSeparations = availableTeams.filter((index) =>
-      canPlacePlayerInTeam(
-        player,
-        teams[index],
-        playersPerTeam,
-        separationMap,
-      ),
+      canPlacePlayerInTeam(player, teams[index], playersPerTeam, separationMap),
     );
     const candidateTeams =
       teamsRespectingSeparations.length > 0
