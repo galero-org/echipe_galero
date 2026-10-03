@@ -1,4 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
+import {
+  createClient,
+  type WebSocketLikeConstructor,
+} from "@supabase/supabase-js";
+
+const realtimeTransport = import.meta.env.SSR
+  ? ((await import("ws")).default as unknown as WebSocketLikeConstructor)
+  : undefined;
 
 export const supabase = createClient(
   import.meta.env.SUPABASE_URL,
@@ -7,5 +14,8 @@ export const supabase = createClient(
     auth: {
       flowType: "pkce",
     },
-  }
+    realtime: {
+      transport: realtimeTransport,
+    },
+  },
 );
