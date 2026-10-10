@@ -23,22 +23,42 @@ if (playersError) {
   return Astro.redirect("/error-page");
 }
 
-const lastEdition = editions && editions.length > 0 ? editions[0] : null;
-const numarEditie: number = lastEdition?.numar_editie ?? 0;
-const editionId: string = lastEdition?.id ?? "";
+const editionOptions = editions ?? [];
+const registeredPlayersByEdition = new Map<string, Set<string>>();
+const registrationPageSize = 1000;
 
-const { data: registrations, error: regError } = await supabase
-  .from("registrations")
-  .select("player_id")
-  .eq("edition_id", editionId)
-  .eq("status", "inscris");
+for (let from = 0; ; from += registrationPageSize) {
+  const { data: registrations, error: registrationsError } = await supabase
+    .from("registrations")
+    .select("edition_id, player_id")
+    .eq("status", "inscris")
+    .order("edition_id")
+    .order("player_id")
+    .range(from, from + registrationPageSize - 1);
 
-if (regError) {
-  console.error("Error fetching registrations:", regError.message);
-  return Astro.redirect("/error-page");
+  if (registrationsError || !registrations) {
+    console.error("Error fetching registrations:", registrationsError?.message);
+    return Astro.redirect("/error-page");
+  }
+
+  for (const registration of registrations) {
+    const players = registeredPlayersByEdition.get(registration.edition_id);
+    if (players) {
+      players.add(registration.player_id);
+    } else {
+      registeredPlayersByEdition.set(
+        registration.edition_id,
+        new Set([registration.player_id]),
+      );
+    }
+  }
+
+  if (registrations.length < registrationPageSize) break;
 }
 
-const registeredPlayerIds = registrations.map((r) => r.player_id);
+const registeredPlayerIdsByEdition = Object.fromEntries(
+  [...registeredPlayersByEdition].map(([id, players]) => [id, [...players]]),
+);
 
 const allPlayersWithPresence = (allPlayers ?? []).map((player) => ({
   ...player,
@@ -54,8 +74,8 @@ const allPlayersWithPresence = (allPlayers ?? []).map((player) => ({
         <TeamOrchestrator
           client:idle
           allPlayers={allPlayersWithPresence}
-          registeredPlayerIds={registeredPlayerIds}
-          numarEditie={numarEditie}
+          editions={editionOptions}
+          registeredPlayerIdsByEdition={registeredPlayerIdsByEdition}
         />
       ) : (
         <p class="text-center text-red-500">

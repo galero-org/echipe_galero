@@ -7,6 +7,8 @@ interface Props {
   setTeamCount: React.Dispatch<React.SetStateAction<number>>;
   playersPerTeam: number;
   setPlayersPerTeam: React.Dispatch<React.SetStateAction<number>>;
+  goalkeepersInSeparateTeams: boolean;
+  setGoalkeepersInSeparateTeams: React.Dispatch<React.SetStateAction<boolean>>;
   onGenerate: () => void;
 }
 
@@ -16,6 +18,8 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
   setTeamCount,
   playersPerTeam,
   setPlayersPerTeam,
+  goalkeepersInSeparateTeams,
+  setGoalkeepersInSeparateTeams,
   onGenerate,
 }) => {
   const totalPlayersNeeded = teamCount * playersPerTeam;
@@ -68,6 +72,18 @@ const PlayerSelectionAndConfig: React.FC<Props> = ({
           />
         </div>
       </div>
+
+      <label className="mb-6 flex items-center gap-3 text-sm font-medium text-gray-700">
+        <input
+          type="checkbox"
+          checked={goalkeepersInSeparateTeams}
+          onChange={(event) =>
+            setGoalkeepersInSeparateTeams(event.target.checked)
+          }
+          className="h-4 w-4 rounded border-gray-300 text-green-700 focus:ring-green-600"
+        />
+        Câte un portar în echipe diferite (când este posibil)
+      </label>
 
       <div className="text-sm text-center text-gray-600 mb-6">
         <span>

@@ -38,9 +38,6 @@ const fallbackTeamBaseColors = [
   "bg-red-500",
 ];
 
-const GRADE_BALANCE_WEIGHT = 0.75;
-const PRESENCE_BALANCE_WEIGHT = 0.25;
-
 // ========================================================================
 // Helper Functions
 // ========================================================================
@@ -65,42 +62,9 @@ const generateFallbackCardClasses = (baseColor: string): string => {
   return `bg-${colorName}-100 border-${colorName}-500 text-${colorName}-800`;
 };
 
-const getPresenceCount = (player: Player): number =>
-  Math.max(0, player.totalEditions ?? 0);
-
-function createDraftScoreMap(players: Player[]): Map<string, number> {
-  const grades = players.map((player) => player.grade);
-  const presences = players.map(getPresenceCount);
-  const minGrade = Math.min(...grades);
-  const maxGrade = Math.max(...grades);
-  const minPresence = Math.min(...presences);
-  const maxPresence = Math.max(...presences);
-
-  const normalize = (value: number, min: number, max: number) =>
-    max === min ? 0 : (value - min) / (max - min);
-
-  return new Map(
-    players.map((player) => {
-      const gradeScore = normalize(player.grade, minGrade, maxGrade);
-      const presenceScore = normalize(
-        getPresenceCount(player),
-        minPresence,
-        maxPresence,
-      );
-      return [
-        player.id,
-        gradeScore * GRADE_BALANCE_WEIGHT +
-          presenceScore * PRESENCE_BALANCE_WEIGHT,
-      ];
-    }),
-  );
-}
-
 interface TeamBalanceTargets {
   grade: number;
-  presence: number;
   gradeScale: number;
-  presenceScale: number;
 }
 
 function createTeamBalanceTargets(
@@ -109,18 +73,11 @@ function createTeamBalanceTargets(
   playersPerTeam: number,
 ): TeamBalanceTargets {
   const grades = players.map((player) => player.grade);
-  const presences = players.map(getPresenceCount);
-
   return {
     grade: grades.reduce((sum, grade) => sum + grade, 0) / teamCount,
-    presence: presences.reduce((sum, count) => sum + count, 0) / teamCount,
     gradeScale: Math.max(
       1,
       (Math.max(...grades) - Math.min(...grades)) * playersPerTeam,
-    ),
-    presenceScale: Math.max(
-      1,
-      (Math.max(...presences) - Math.min(...presences)) * playersPerTeam,
     ),
   };
 }
@@ -133,19 +90,7 @@ function getPlacementCost(
   const gradeBefore = (team.totalGrade - targets.grade) / targets.gradeScale;
   const gradeAfter =
     (team.totalGrade + player.grade - targets.grade) / targets.gradeScale;
-  const presenceBefore =
-    ((team.totalEditionsPlayed ?? 0) - targets.presence) /
-    targets.presenceScale;
-  const presenceAfter =
-    ((team.totalEditionsPlayed ?? 0) +
-      getPresenceCount(player) -
-      targets.presence) /
-    targets.presenceScale;
-
-  return (
-    GRADE_BALANCE_WEIGHT * (gradeAfter ** 2 - gradeBefore ** 2) +
-    PRESENCE_BALANCE_WEIGHT * (presenceAfter ** 2 - presenceBefore ** 2)
-  );
+  return gradeAfter ** 2 - gradeBefore ** 2;
 }
 
 function findBestTeamIndex(
@@ -230,25 +175,18 @@ const canPlacePlayerInTeam = (
 };
 
 // ========================================================================
-// Main Team Generation - Snake Draft Algorithm
+// Main Team Generation - Grade-Balanced Draft
 // ========================================================================
 
 /**
- * Generate teams using a fair snake draft algorithm.
- *
- * How it works:
- * 1. Create all teams
- * 2. Distribute players in snake order (alternating direction each round)
- *    - Round 1: Team 1 → Team 2 → ... → Team N
- *    - Round 2: Team N → Team N-1 → ... → Team 1
- *    - Repeat until all players placed
- * 3. This ensures fair distribution of skill levels across teams
+ * Balances teams by grade. Attendance is collected only for display statistics.
  */
 export function generateTeams(
   selectedPlayers: Player[],
   teamCount: number,
   playersPerTeam: number,
   preferences: PlayerPreferences = {},
+  options: { goalkeepersInSeparateTeams?: boolean } = {},
 ): Team[] {
   if (
     !selectedPlayers ||
@@ -260,11 +198,10 @@ export function generateTeams(
   }
 
   const totalPlayersNeeded = teamCount * playersPerTeam;
-  const draftScores = createDraftScoreMap(selectedPlayers);
+  const goalkeepersInSeparateTeams = options.goalkeepersInSeparateTeams ?? true;
 
   // --- Step 1: Separate players by position ---
   const goalkeepers = selectedPlayers.filter((p) => p.position === "GK");
-  const fieldPlayers = selectedPlayers.filter((p) => p.position === "FIELD");
 
   if (goalkeepers.length < teamCount) {
     console.warn(
@@ -305,35 +242,39 @@ export function generateTeams(
 
   // --- Step 3: Build preference maps ---
   const { separationMap } = buildPreferenceMaps(preferences);
-  const sortedGoalkeepers = [...goalkeepers].sort(
-    (left, right) =>
-      (draftScores.get(right.id) ?? 0) - (draftScores.get(left.id) ?? 0),
+  const separatedGoalkeepers = goalkeepersInSeparateTeams
+    ? [...goalkeepers]
+        .sort((left, right) => right.grade - left.grade)
+        .slice(0, teamCount)
+    : [];
+  const reservedGoalkeeperIds = new Set(
+    separatedGoalkeepers.map((goalkeeper) => goalkeeper.id),
   );
-  const goalkeeperQueue = sortedGoalkeepers.slice(0, teamCount);
-  const fieldSlots = Math.max(0, totalPlayersNeeded - goalkeeperQueue.length);
-  const playerQueue = [...fieldPlayers]
+  const remainingSlots = Math.max(
+    0,
+    totalPlayersNeeded - separatedGoalkeepers.length,
+  );
+  const playerQueue = [...selectedPlayers]
+    .filter((player) => !reservedGoalkeeperIds.has(player.id))
     .sort((left, right) => {
       const leftSeparationCount = separationMap.get(left.id)?.size ?? 0;
       const rightSeparationCount = separationMap.get(right.id)?.size ?? 0;
       return (
-        rightSeparationCount - leftSeparationCount ||
-        (draftScores.get(right.id) ?? 0) - (draftScores.get(left.id) ?? 0) ||
-        right.grade - left.grade ||
-        getPresenceCount(right) - getPresenceCount(left)
+        rightSeparationCount - leftSeparationCount || right.grade - left.grade
       );
     })
-    .slice(0, fieldSlots);
+    .slice(0, remainingSlots);
   const balanceTargets = createTeamBalanceTargets(
-    [...goalkeeperQueue, ...playerQueue],
+    [...separatedGoalkeepers, ...playerQueue],
     teamCount,
     playersPerTeam,
   );
 
-  // --- Step 4: Distribute goalkeepers (one per team if possible) ---
+  // --- Step 4: Optionally reserve one goalkeeper slot per team ---
   const availableGoalkeeperTeams = shuffle(
     Array.from({ length: teamCount }, (_, index) => index),
   );
-  for (const goalkeeper of goalkeeperQueue) {
+  for (const goalkeeper of separatedGoalkeepers) {
     const teamIndex = findBestTeamIndex(
       goalkeeper,
       availableGoalkeeperTeams,
@@ -345,15 +286,13 @@ export function generateTeams(
     const team = teams[teamIndex];
     team.players.push(goalkeeper);
     team.totalGrade += goalkeeper.grade;
-    team.totalEditionsPlayed =
-      (team.totalEditionsPlayed ?? 0) + getPresenceCount(goalkeeper);
     availableGoalkeeperTeams.splice(
       availableGoalkeeperTeams.indexOf(teamIndex),
       1,
     );
   }
 
-  // --- Step 5: Place field players by weighted balance ---
+  // --- Step 5: Place remaining players by grade balance ---
   let direction = 1; // 1 = forward (0→N), -1 = backward (N→0)
 
   while (playerQueue.length > 0) {
@@ -384,8 +323,6 @@ export function generateTeams(
 
     teams[teamIndex].players.push(player);
     teams[teamIndex].totalGrade += player.grade;
-    teams[teamIndex].totalEditionsPlayed =
-      (teams[teamIndex].totalEditionsPlayed ?? 0) + getPresenceCount(player);
     direction = direction === 1 ? -1 : 1;
   }
 
@@ -396,7 +333,7 @@ export function generateTeams(
       0,
     );
     team.totalEditionsPlayed = team.players.reduce(
-      (sum, player) => sum + getPresenceCount(player),
+      (sum, player) => sum + Math.max(0, player.totalEditions ?? 0),
       0,
     );
     if (team.players.length > 0) {
