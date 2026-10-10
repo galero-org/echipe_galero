@@ -15,7 +15,8 @@ type TeamPlayer = Team["players"][number];
 // --- Constante ---------------------------------------------------------------
 
 const CAPTURE_ELEMENT_ID = "teams-capture";
-const LANDSCAPE_RATIO = 16 / 9;
+const IMAGE_WIDTH = 1080;
+const MIN_PORTRAIT_RATIO = 5 / 4;
 
 const CARD_VARIANTS = {
   hidden: { opacity: 0, scale: 0.9, y: 20 },
@@ -42,43 +43,43 @@ function getGridColsClass(teamCount: number): string {
   return "lg:grid-cols-4";
 }
 
-/** Captures the existing team layout and pads the output to a landscape canvas. */
+/** Captures the existing cards in a phone-first portrait layout. */
 async function createTeamsImage(
   numarEditie: number,
-  teamCount: number,
 ): Promise<File | null> {
   const element = document.getElementById(CAPTURE_ELEMENT_ID);
   if (!element) return null;
 
   const renderedCanvas = await html2canvas(element, {
     backgroundColor: "#ffffff",
-    scale: 1.5,
+    scale: 1,
     useCORS: true,
     logging: false,
-    width: 1600,
-    windowWidth: 1600,
+    width: IMAGE_WIDTH,
+    windowWidth: IMAGE_WIDTH,
     onclone: (clonedDocument) => {
       clonedDocument.documentElement.classList.remove("dark");
       clonedDocument.body.classList.remove("dark");
       clonedDocument.documentElement.style.colorScheme = "light";
+      clonedDocument.documentElement.style.backgroundColor = "#ffffff";
       clonedDocument.body.style.colorScheme = "light";
       clonedDocument.body.style.backgroundColor = "#ffffff";
 
       const clonedElement = clonedDocument.getElementById(CAPTURE_ELEMENT_ID);
       if (!clonedElement) return;
-      clonedElement.style.width = "1600px";
+      clonedElement.style.width = `${IMAGE_WIDTH}px`;
       clonedElement.style.maxWidth = "none";
       clonedElement.style.minHeight = "0";
       clonedElement.style.overflow = "visible";
       clonedElement.style.backgroundColor = "#ffffff";
-      clonedElement.style.padding = "28px";
+      clonedElement.style.padding = "24px";
 
       const teamGrid =
         clonedElement.querySelector<HTMLElement>("[data-teams-grid]");
       if (teamGrid) {
         teamGrid.style.display = "grid";
-        teamGrid.style.gridTemplateColumns = `repeat(${Math.min(teamCount, 4)}, minmax(0, 1fr))`;
-        teamGrid.style.gap = "20px";
+        teamGrid.style.gridTemplateColumns = "minmax(0, 1fr)";
+        teamGrid.style.gap = "16px";
         teamGrid.style.transform = "none";
       }
 
@@ -144,8 +145,11 @@ async function createTeamsImage(
     },
   });
 
-  const outputWidth = 1600;
-  const outputHeight = Math.round(outputWidth / LANDSCAPE_RATIO);
+  const outputWidth = renderedCanvas.width;
+  const outputHeight = Math.max(
+    renderedCanvas.height,
+    Math.ceil(outputWidth * MIN_PORTRAIT_RATIO),
+  );
   const canvas = document.createElement("canvas");
   canvas.width = outputWidth;
   canvas.height = outputHeight;
@@ -154,19 +158,7 @@ async function createTeamsImage(
 
   context.fillStyle = "#ffffff";
   context.fillRect(0, 0, outputWidth, outputHeight);
-  const scale = Math.min(
-    outputWidth / renderedCanvas.width,
-    outputHeight / renderedCanvas.height,
-  );
-  const renderedWidth = renderedCanvas.width * scale;
-  const renderedHeight = renderedCanvas.height * scale;
-  context.drawImage(
-    renderedCanvas,
-    (outputWidth - renderedWidth) / 2,
-    (outputHeight - renderedHeight) / 2,
-    renderedWidth,
-    renderedHeight,
-  );
+  context.drawImage(renderedCanvas, 0, 0);
 
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, "image/png"),
@@ -306,7 +298,7 @@ const GeneratedTeamsDisplay: React.FC<Props> = ({
   const handleShare = async () => {
     setIsSharing(true);
     try {
-      const image = await createTeamsImage(numarEditie, teamCount);
+      const image = await createTeamsImage(numarEditie);
       if (!image) return;
 
       if (navigator.canShare?.({ files: [image] }) && navigator.share) {

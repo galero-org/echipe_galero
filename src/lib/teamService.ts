@@ -62,57 +62,6 @@ const generateFallbackCardClasses = (baseColor: string): string => {
   return `bg-${colorName}-100 border-${colorName}-500 text-${colorName}-800`;
 };
 
-interface TeamBalanceTargets {
-  grade: number;
-  gradeScale: number;
-}
-
-function createTeamBalanceTargets(
-  players: Player[],
-  teamCount: number,
-  playersPerTeam: number,
-): TeamBalanceTargets {
-  const grades = players.map((player) => player.grade);
-  return {
-    grade: grades.reduce((sum, grade) => sum + grade, 0) / teamCount,
-    gradeScale: Math.max(
-      1,
-      (Math.max(...grades) - Math.min(...grades)) * playersPerTeam,
-    ),
-  };
-}
-
-function getPlacementCost(
-  team: Team,
-  player: Player,
-  targets: TeamBalanceTargets,
-): number {
-  const gradeBefore = (team.totalGrade - targets.grade) / targets.gradeScale;
-  const gradeAfter =
-    (team.totalGrade + player.grade - targets.grade) / targets.gradeScale;
-  return gradeAfter ** 2 - gradeBefore ** 2;
-}
-
-function findBestTeamIndex(
-  player: Player,
-  teamIndices: number[],
-  teams: Team[],
-  targets: TeamBalanceTargets,
-): number | null {
-  let bestTeamIndex: number | null = null;
-  let lowestCost = Number.POSITIVE_INFINITY;
-
-  for (const teamIndex of teamIndices) {
-    const cost = getPlacementCost(teams[teamIndex], player, targets);
-    if (cost < lowestCost) {
-      lowestCost = cost;
-      bestTeamIndex = teamIndex;
-    }
-  }
-
-  return bestTeamIndex;
-}
-
 /**
  * Build preference maps for quick lookup
  */
@@ -179,7 +128,8 @@ const canPlacePlayerInTeam = (
 // ========================================================================
 
 /**
- * Balances teams by grade. Attendance is collected only for display statistics.
+ * Sorts players by grade and distributes them in alternating snake-draft rounds.
+ * Attendance is collected only for display statistics.
  */
 export function generateTeams(
   selectedPlayers: Player[],
@@ -256,43 +206,22 @@ export function generateTeams(
   );
   const playerQueue = [...selectedPlayers]
     .filter((player) => !reservedGoalkeeperIds.has(player.id))
-    .sort((left, right) => {
-      const leftSeparationCount = separationMap.get(left.id)?.size ?? 0;
-      const rightSeparationCount = separationMap.get(right.id)?.size ?? 0;
-      return (
-        rightSeparationCount - leftSeparationCount || right.grade - left.grade
-      );
-    })
+    .sort((left, right) => right.grade - left.grade)
     .slice(0, remainingSlots);
-  const balanceTargets = createTeamBalanceTargets(
-    [...separatedGoalkeepers, ...playerQueue],
-    teamCount,
-    playersPerTeam,
-  );
 
-  // --- Step 4: Optionally reserve one goalkeeper slot per team ---
+  // --- Step 4: Optionally reserve one goalkeeper per team ---
   const availableGoalkeeperTeams = shuffle(
     Array.from({ length: teamCount }, (_, index) => index),
   );
   for (const goalkeeper of separatedGoalkeepers) {
-    const teamIndex = findBestTeamIndex(
-      goalkeeper,
-      availableGoalkeeperTeams,
-      teams,
-      balanceTargets,
-    );
-    if (teamIndex === null) break;
-
+    const teamIndex = availableGoalkeeperTeams.shift();
+    if (teamIndex === undefined) break;
     const team = teams[teamIndex];
     team.players.push(goalkeeper);
     team.totalGrade += goalkeeper.grade;
-    availableGoalkeeperTeams.splice(
-      availableGoalkeeperTeams.indexOf(teamIndex),
-      1,
-    );
   }
 
-  // --- Step 5: Place remaining players by grade balance ---
+  // --- Step 5: Snake draft the remaining players by grade ---
   let direction = 1; // 1 = forward (0→N), -1 = backward (N→0)
 
   while (playerQueue.length > 0) {
@@ -300,29 +229,24 @@ export function generateTeams(
       direction === 1
         ? Array.from({ length: teamCount }, (_, i) => i)
         : Array.from({ length: teamCount }, (_, i) => teamCount - 1 - i);
-    const player = playerQueue.shift()!;
-    const availableTeams = teamIndices.filter(
-      (index) => teams[index].players.length < playersPerTeam,
-    );
-    if (availableTeams.length === 0) break;
+    let placedInRound = false;
 
-    const teamsRespectingSeparations = availableTeams.filter((index) =>
-      canPlacePlayerInTeam(player, teams[index], playersPerTeam, separationMap),
-    );
-    const candidateTeams =
-      teamsRespectingSeparations.length > 0
-        ? teamsRespectingSeparations
-        : availableTeams;
-    const teamIndex = findBestTeamIndex(
-      player,
-      candidateTeams,
-      teams,
-      balanceTargets,
-    );
-    if (teamIndex === null) break;
+    for (const teamIndex of teamIndices) {
+      if (playerQueue.length === 0) break;
+      const team = teams[teamIndex];
+      if (team.players.length >= playersPerTeam) continue;
 
-    teams[teamIndex].players.push(player);
-    teams[teamIndex].totalGrade += player.grade;
+      const eligiblePlayerIndex = playerQueue.findIndex((player) =>
+        canPlacePlayerInTeam(player, team, playersPerTeam, separationMap),
+      );
+      const playerIndex = eligiblePlayerIndex >= 0 ? eligiblePlayerIndex : 0;
+      const [player] = playerQueue.splice(playerIndex, 1);
+      team.players.push(player);
+      team.totalGrade += player.grade;
+      placedInRound = true;
+    }
+
+    if (!placedInRound) break;
     direction = direction === 1 ? -1 : 1;
   }
 
