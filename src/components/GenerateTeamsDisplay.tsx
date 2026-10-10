@@ -14,8 +14,8 @@ type TeamPlayer = Team["players"][number];
 
 // --- Constante ---------------------------------------------------------------
 
-/** ID-ul elementului DOM capturat la exportul imaginii. */
 const CAPTURE_ELEMENT_ID = "teams-capture";
+const LANDSCAPE_RATIO = 16 / 9;
 
 const CARD_VARIANTS = {
   hidden: { opacity: 0, scale: 0.9, y: 20 },
@@ -42,36 +42,132 @@ function getGridColsClass(teamCount: number): string {
   return "lg:grid-cols-4";
 }
 
-/** Creează o imagine landscape, luminoasă, independentă de tema și viewport-ul paginii. */
-async function createTeamsImage(numarEditie: number): Promise<File | null> {
+/** Captures the existing team layout and pads the output to a landscape canvas. */
+async function createTeamsImage(
+  numarEditie: number,
+  teamCount: number,
+): Promise<File | null> {
   const element = document.getElementById(CAPTURE_ELEMENT_ID);
   if (!element) return null;
 
-  const canvas = await html2canvas(element, {
+  const renderedCanvas = await html2canvas(element, {
     backgroundColor: "#ffffff",
-    scale: 2,
+    scale: 1.5,
     useCORS: true,
     logging: false,
-    windowWidth: 1440,
+    width: 1600,
+    windowWidth: 1600,
     onclone: (clonedDocument) => {
       clonedDocument.documentElement.classList.remove("dark");
       clonedDocument.body.classList.remove("dark");
+      clonedDocument.documentElement.style.colorScheme = "light";
+      clonedDocument.body.style.colorScheme = "light";
       clonedDocument.body.style.backgroundColor = "#ffffff";
 
       const clonedElement = clonedDocument.getElementById(CAPTURE_ELEMENT_ID);
       if (!clonedElement) return;
-
-      clonedElement.style.width = "1280px";
+      clonedElement.style.width = "1600px";
       clonedElement.style.maxWidth = "none";
       clonedElement.style.minHeight = "0";
-      clonedElement.style.padding = "32px";
       clonedElement.style.overflow = "visible";
-      clonedElement.style.borderRadius = "0";
       clonedElement.style.backgroundColor = "#ffffff";
-      clonedElement.style.color = "#1f2937";
-      clonedElement.style.boxShadow = "none";
+      clonedElement.style.padding = "28px";
+
+      const teamGrid =
+        clonedElement.querySelector<HTMLElement>("[data-teams-grid]");
+      if (teamGrid) {
+        teamGrid.style.display = "grid";
+        teamGrid.style.gridTemplateColumns = `repeat(${Math.min(teamCount, 4)}, minmax(0, 1fr))`;
+        teamGrid.style.gap = "20px";
+        teamGrid.style.transform = "none";
+      }
+
+      clonedElement
+        .querySelectorAll<HTMLElement>("[data-team-card]")
+        .forEach((card) => {
+          card.style.padding = "18px";
+          card.style.borderRadius = "8px";
+          card.style.backgroundColor = "#ffffff";
+          card.style.opacity = "1";
+          card.style.transform = "none";
+        });
+      clonedElement
+        .querySelectorAll<HTMLElement>("[data-team-title]")
+        .forEach((title) => {
+          title.style.fontSize = "28px";
+          title.style.lineHeight = "1.2";
+        });
+      clonedElement
+        .querySelectorAll<HTMLElement>("[data-team-count]")
+        .forEach((count) => {
+          count.style.fontSize = "17px";
+          count.style.whiteSpace = "nowrap";
+        });
+      clonedElement
+        .querySelectorAll<HTMLElement>("[data-team-metric-label]")
+        .forEach((label) => {
+          label.style.fontSize = "16px";
+        });
+      clonedElement
+        .querySelectorAll<HTMLElement>("[data-team-metric-value]")
+        .forEach((value) => {
+          value.style.fontSize = "23px";
+        });
+      clonedElement
+        .querySelectorAll<HTMLElement>("[data-team-players-heading]")
+        .forEach((heading) => {
+          heading.style.fontSize = "19px";
+        });
+      clonedElement
+        .querySelectorAll<HTMLElement>("[data-team-player]")
+        .forEach((row) => {
+          row.style.padding = "9px 8px";
+          row.style.fontSize = "18px";
+          row.style.lineHeight = "1.25";
+          row.style.color = "#1f2937";
+        });
+      clonedElement
+        .querySelectorAll<HTMLElement>("[data-player-name]")
+        .forEach((name) => {
+          name.style.display = "inline-block";
+          name.style.maxWidth = "100%";
+          name.style.overflow = "hidden";
+          name.style.textOverflow = "ellipsis";
+          name.style.whiteSpace = "nowrap";
+        });
+      clonedElement
+        .querySelectorAll<HTMLElement>("[data-player-presence]")
+        .forEach((presence) => {
+          presence.style.fontSize = "15px";
+          presence.style.whiteSpace = "nowrap";
+        });
     },
   });
+
+  const outputWidth = 1600;
+  const outputHeight = Math.round(outputWidth / LANDSCAPE_RATIO);
+  const canvas = document.createElement("canvas");
+  canvas.width = outputWidth;
+  canvas.height = outputHeight;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, outputWidth, outputHeight);
+  const scale = Math.min(
+    outputWidth / renderedCanvas.width,
+    outputHeight / renderedCanvas.height,
+  );
+  const renderedWidth = renderedCanvas.width * scale;
+  const renderedHeight = renderedCanvas.height * scale;
+  context.drawImage(
+    renderedCanvas,
+    (outputWidth - renderedWidth) / 2,
+    (outputHeight - renderedHeight) / 2,
+    renderedWidth,
+    renderedHeight,
+  );
+
   const blob = await new Promise<Blob | null>((resolve) =>
     canvas.toBlob(resolve, "image/png"),
   );
@@ -115,11 +211,16 @@ function formatPresenceCount(count: number): string {
 }
 
 const PlayerRow: React.FC<{ player: TeamPlayer }> = ({ player }) => (
-  <li className="text-sm p-2 bg-white/70 rounded-md shadow-sm flex justify-between items-center hover:bg-white/90 transition">
+  <li
+    data-team-player
+    className="text-sm p-2 bg-white/70 rounded-md shadow-sm flex justify-between items-center hover:bg-white/90 transition"
+  >
     <div className="flex-1">
-      <span className="font-medium">{player.full_name}</span>
+      <span data-player-name className="font-medium">
+        {player.full_name}
+      </span>
       {player.totalEditions !== undefined && (
-        <span className="ml-1 text-xs text-gray-500">
+        <span data-player-presence className="ml-1 text-xs text-gray-500">
           {formatPresenceCount(player.totalEditions)}
         </span>
       )}
@@ -144,15 +245,20 @@ const TeamCard: React.FC<{
       initial="hidden"
       animate="visible"
       exit="exit"
+      data-team-card
       className={`rounded-xl shadow-lg p-4 sm:p-5 border-t-4 bg-white bg-opacity-90 ${
         team.color || "border-gray-500 text-gray-800"
       }`}
     >
       <div className="flex justify-between items-center mb-2">
-        <h3 className={`text-lg sm:text-xl font-bold ${textColorClass}`}>
+        <h3
+          data-team-title
+          className={`text-lg sm:text-xl font-bold ${textColorClass}`}
+        >
           {team.name}
         </h3>
         <span
+          data-team-count
           className={`px-3 py-1 text-xs font-semibold rounded-full ${
             team.color || "bg-gray-200 text-gray-700"
           }`}
@@ -161,22 +267,23 @@ const TeamCard: React.FC<{
         </span>
       </div>
 
-      <dl className="mb-3 grid grid-cols-2 gap-2 text-sm">
+      <dl className="mb-3 grid grid-cols-1 gap-2 text-sm">
         <div className="rounded-md bg-gray-50 px-3 py-2">
-          <dt className="text-xs text-gray-500">AVG notă</dt>
-          <dd className={`font-semibold ${textColorClass}`}>
+          <dt data-team-metric-label className="text-xs text-gray-500">
+            AVG notă
+          </dt>
+          <dd
+            data-team-metric-value
+            className={`font-semibold ${textColorClass}`}
+          >
             {(team.averageGrade ?? 0).toFixed(2)}
-          </dd>
-        </div>
-        <div className="rounded-md bg-gray-50 px-3 py-2">
-          <dt className="text-xs text-gray-500">AVG prezențe</dt>
-          <dd className="font-semibold text-gray-800">
-            {(team.averageEditionsPlayed ?? 0).toFixed(1)}
           </dd>
         </div>
       </dl>
 
-      <h4 className="text-sm font-medium mb-2">Jucători:</h4>
+      <h4 data-team-players-heading className="text-sm font-medium mb-2">
+        Jucători:
+      </h4>
       <ul className="space-y-1">
         {team.players.map((player) => (
           <PlayerRow key={player.id} player={player} />
@@ -199,7 +306,7 @@ const GeneratedTeamsDisplay: React.FC<Props> = ({
   const handleShare = async () => {
     setIsSharing(true);
     try {
-      const image = await createTeamsImage(numarEditie);
+      const image = await createTeamsImage(numarEditie, teamCount);
       if (!image) return;
 
       if (navigator.canShare?.({ files: [image] }) && navigator.share) {
@@ -234,7 +341,7 @@ const GeneratedTeamsDisplay: React.FC<Props> = ({
 
       <div
         id={CAPTURE_ELEMENT_ID}
-        className="relative bg-white p-4 sm:p-6 rounded-xl shadow-xl overflow-hidden"
+        className="relative overflow-hidden rounded-xl bg-white p-4 shadow-xl sm:p-6"
       >
         <img
           src="/images/galero-logo.jpg"
@@ -258,6 +365,7 @@ const GeneratedTeamsDisplay: React.FC<Props> = ({
 
         <AnimatePresence mode="popLayout">
           <motion.div
+            data-teams-grid
             layout
             className={`relative z-10 grid grid-cols-1 md:grid-cols-2 ${gridColsClass} gap-4 sm:gap-6`}
           >
